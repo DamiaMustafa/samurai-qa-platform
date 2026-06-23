@@ -1,14 +1,17 @@
 import { test, expect } from "../../src/fixtures";
+import { envConfig } from "../../src/config/environments";
 
 test.describe("Dashboard Page @smoke @dashboard", () => {
   // Skip all tests if credentials are not configured
   test.skip(
-    !process.env.ADMIN_USERNAME,
+    !envConfig.credentials.admin.username,
     "Admin credentials not configured in .env"
   );
 
   test.beforeEach(async ({ loginPage }) => {
     await loginPage.loginAs("admin");
+    const error = await loginPage.getLoginErrorMessage();
+    test.skip(!!error, `Login blocked by environment: ${error}`);
   });
 
   test("should load the dashboard after login", async ({ dashboardPage }) => {

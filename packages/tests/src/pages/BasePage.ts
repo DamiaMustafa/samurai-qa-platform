@@ -61,7 +61,7 @@ export class BasePage {
   }
 
   async isVisible(selector: string): Promise<boolean> {
-    return this.page.locator(selector).isVisible();
+    return this.page.locator(selector).first().isVisible();
   }
 
   // ── Screenshots ─────────────────────────────────────────────────────────
