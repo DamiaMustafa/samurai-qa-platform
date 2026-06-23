@@ -1,0 +1,25 @@
+{
+  "name": "samurai-qa-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QA Automation Platform for Samurai Central Staging",
+  "workspaces": [
+    "packages/shared",
+    "packages/tests",
+    "packages/dashboard"
+  ],
+  "scripts": {
+    "dev:dashboard": "npm -w packages/dashboard run dev",
+    "build:dashboard": "npm -w packages/dashboard run build",
+    "test:all": "npm -w packages/tests run test",
+    "test:smoke": "npm -w packages/tests run test:smoke",
+    "test:headed": "npm -w packages/tests run test:headed",
+    "test:ui": "npm -w packages/tests run test:ui",
+    "db:push": "npm -w packages/dashboard run db:push",
+    "db:studio": "npm -w packages/dashboard run db:studio",
+    "typecheck": "npm -w packages/shared run typecheck && npm -w packages/tests run typecheck"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

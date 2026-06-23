@@ -1,0 +1,49 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model TestRun {
+  id          String       @id @default(uuid())
+  trigger     String       @default("manual")
+  suite       String?
+  status      String       @default("running")
+  totalTests  Int          @default(0)
+  passed      Int          @default(0)
+  failed      Int          @default(0)
+  skipped     Int          @default(0)
+  duration    Int          @default(0)
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  results     TestResult[]
+  createdAt   DateTime     @default(now())
+}
+
+model TestResult {
+  id          Int      @id @default(autoincrement())
+  runId       String
+  run         TestRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  suiteName   String
+  testName    String
+  status      String
+  duration    Int      @default(0)
+  retries     Int      @default(0)
+  errors      String   @default("[]")
+  screenshots String   @default("[]")
+  videoPath   String?
+  logPath     String?
+  startedAt   DateTime
+  completedAt DateTime
+  steps       String   @default("[]")
+  createdAt   DateTime @default(now())
+}
+
+model Settings {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
