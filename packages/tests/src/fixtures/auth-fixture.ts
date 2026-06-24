@@ -2,6 +2,7 @@ import { test as base } from "@playwright/test";
 import { LoginPage, DashboardPage, NavigationPage, HomePage } from "../pages";
 import { type PageFixtures } from "./base-fixture";
 import { takeResultScreenshot } from "./screenshot-helper";
+import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
 /**
  * Auth fixture — provides a pre-authenticated session.
@@ -33,6 +34,11 @@ export const authTest = base.extend<AuthFixtures>({
 
   homePage: async ({ page }, use) => {
     await use(new HomePage(page));
+  },
+
+  consoleErrors: async ({ page }, use) => {
+    const capture = listenForConsoleErrors(page);
+    await use(capture);
   },
 
   // Auto-fixture: takes a screenshot after every test with readable naming
