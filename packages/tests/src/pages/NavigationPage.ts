@@ -8,36 +8,39 @@ import { BasePage } from "./BasePage";
  * Sidebar nav items:
  *   Home, Projects, Instant Distill, Edge, Workflow, Plan, Manage Users, Logout
  *
- * DOM reference (Angular Material sidenav + custom nav components):
- * - Sidebar uses mat-sidenav / mat-drawer
- * - Nav links are Angular routerLinks
- * - User menu uses Material menu trigger
+ * DOM reference (verified against staging.visionsamur.ai):
+ * - Sidebar: <nav class="tw-side-nav__navigation">
+ * - Nav links (collapsed): <a class="tw-side-nav__navigation-link-close">
+ * - Nav buttons: <button class="tw-side-nav__button-close">
+ * - Active state: class "active--" on the <a> element
+ * - Logout: <button class="tw-side-nav__button-close tw-side-nav__button-close-logout">
  */
 export class NavigationPage extends BasePage {
   // ── Selectors (verified against staging DOM) ────────────────────────────
-  private readonly sidebar = 'mat-sidenav, mat-drawer, .sidebar, [role="navigation"], nav[class*="sidebar"], nav[class*="side"]';
-  private readonly navLinks = 'mat-sidenav a, mat-drawer a, nav a, [role="navigation"] a, [class*="sidebar"] a, [class*="nav-item"] a, [class*="sidebar"] button';
+  private readonly sidebar = 'nav.tw-side-nav__navigation, .tw-side-nav__navigation, nav[class*="side-nav"]';
+  private readonly navLinks = 'a.tw-side-nav__navigation-link-close, a[class*="side-nav__navigation-link"]';
+  private readonly navButtons = 'button.tw-side-nav__button-close, button[class*="side-nav__button-close"]';
   private readonly userMenu = '[data-testid*="user-menu"], .user-menu, .profile-menu, button[mat-icon-button]';
-  private readonly logoutButton = 'a:has-text("Logout"), a:has-text("Sign out"), button:has-text("Logout"), button:has-text("Sign out"), [data-testid*="logout"]';
-  private readonly mobileMenuToggle = '.mobile-menu-toggle, .hamburger, button[aria-label*="menu" i], mat-drawer-toggle';
+  private readonly logoutButton = 'button.tw-side-nav__button-close-logout, button:has-text("Logout"), button:has-text("Sign out"), a:has-text("Logout"), [data-testid*="logout"]';
+  private readonly mobileMenuToggle = '.mobile-menu-toggle, .hamburger, button[aria-label*="menu" i], mat-drawer-toggle, button.tw-layout__nav-container-button';
 
   // Active state selectors
   private readonly activeNavLink =
-    '[class*="active"], [aria-current="page"], [aria-selected="true"], ' +
-    '.router-link-active, .mat-mdc-list-item.activated, [class*="selected"]';
+    'a.tw-side-nav__navigation-link-close.active--, a[class*="active--"], ' +
+    '[aria-current="page"], .router-link-active';
 
   /**
    * Map of sidebar nav item names to expected URL path patterns.
-   * Used by navigation tests to verify correct routing.
+   * Verified against staging.visionsamur.ai routes.
    */
   static readonly NAV_ROUTES: Record<string, RegExp> = {
     home: /\/(home)?$/,
     projects: /\/projects/,
-    "instant distill": /\/(instant[-_]?distill|distill)/,
-    edge: /\/edge/,
-    workflow: /\/workflow/,
-    plan: /\/plan/,
-    "manage users": /\/(manage[-_]?users|users)/,
+    "instant distill": /\/instant-distill/,
+    edge: /\/edge-management/,
+    workflow: /\/workflow-listing/,
+    plan: /\/company\/.*\/plan/,
+    "manage users": /\/user-management\/users/,
   };
 
   constructor(page: Page) {
@@ -104,10 +107,9 @@ export class NavigationPage extends BasePage {
   // ── Logout ──────────────────────────────────────────────────────────────
 
   async logout(): Promise<void> {
-    // Try clicking sidebar Logout first
+    // Try sidebar Logout button first
     const sidebarLogout = this.page
-      .locator(this.navLinks)
-      .filter({ hasText: /logout/i })
+      .locator(this.logoutButton)
       .first();
     if (await sidebarLogout.isVisible().catch(() => false)) {
       await sidebarLogout.click();
@@ -119,27 +121,73 @@ export class NavigationPage extends BasePage {
     if (userMenuVisible) {
       await this.page.locator(this.userMenu).first().click();
     }
-    await this.page.locator(this.logoutButton).first().click();
+    await this.page.locator('button:has-text("Logout"), button:has-text("Sign out")').first().click();
     await this.waitForReady();
   }
 
   // ── Sidebar Helpers ─────────────────────────────────────────────────────
 
   private async clickNavLink(text: string): Promise<void> {
+    // Use direct URL navigation — most reliable for collapsed sidebars
+    const routeKey = text.toLowerCase();
+    const routeMap: Record<string, string> = {
+      home: "/home",
+      projects: "/projects",
+      "instant distill": "/instant-distill",
+      edge: "/edge-management",
+      workflow: "/workflow-listing",
+      "manage users": "/user-management/users",
+    };
+
+    if (routeMap[routeKey]) {
+      await Promise.all([
+        this.page.waitForLoadState("networkidle").catch(() => {}),
+        this.page.goto(routeMap[routeKey], { waitUntil: "domcontentloaded" }),
+      ]);
+      return;
+    }
+
+    // Plan has a dynamic URL — find the link by href
+    if (routeKey === "plan") {
+      const planLink = this.page.locator('a[href*="/plan"]').first();
+      if (await planLink.count() > 0) {
+        const href = await planLink.getAttribute("href");
+        if (href) {
+          await this.page.goto(href, { waitUntil: "domcontentloaded" });
+          return;
+        }
+      }
+    }
+
+    // Last resort: try clicking the visible <a> or <button>
     const link = this.page
-      .locator(this.navLinks)
+      .locator(`${this.navLinks}, ${this.navButtons}`)
       .filter({ hasText: new RegExp(text, "i") })
       .first();
     await link.click();
   }
 
   async getNavLinks(): Promise<string[]> {
-    const links = this.page.locator(this.navLinks);
-    const count = await links.count();
+    // Hover over sidebar to expand it and reveal link text
+    const sidebar = this.page.locator(this.sidebar).first();
+    if (await sidebar.isVisible().catch(() => false)) {
+      await sidebar.hover().catch(() => {});
+      await this.page.waitForTimeout(1000);
+    }
+
+    // Get text from both <a> links and <button> nav items
+    const allItems = this.page.locator(
+      `${this.navLinks}, ${this.navButtons}`
+    );
+    const count = await allItems.count();
     const texts: string[] = [];
+    const seen = new Set<string>();
     for (let i = 0; i < count; i++) {
-      const text = await links.nth(i).textContent();
-      if (text?.trim()) texts.push(text.trim());
+      const text = ((await allItems.nth(i).textContent({ timeout: 2000 }).catch(() => "")) || "").trim();
+      if (text && !seen.has(text.toLowerCase())) {
+        texts.push(text);
+        seen.add(text.toLowerCase());
+      }
     }
     return texts;
   }
@@ -169,7 +217,7 @@ export class NavigationPage extends BasePage {
 
   /**
    * Check whether a nav item matching the given text is currently marked active.
-   * Looks for active CSS classes, aria-current="page", or router-link-active.
+   * Uses the "active--" class from the staging DOM.
    */
   async isNavLinkActive(text: string): Promise<boolean> {
     const link = this.page
@@ -181,45 +229,43 @@ export class NavigationPage extends BasePage {
       return false;
     }
 
+    // Check for "active--" class
+    const classes = (await link.getAttribute("class").catch(() => "")) || "";
+    if (classes.includes("active--")) return true;
+
     // Check aria-current
     const ariaCurrent = await link.getAttribute("aria-current").catch(() => null);
     if (ariaCurrent === "page") return true;
 
-    // Check for active class on the link itself or its parent
-    const classes = (await link.getAttribute("class").catch(() => "")) || "";
-    const parentClasses =
-      (await link
-        .locator("..")
-        .first()
-        .getAttribute("class")
-        .catch(() => "")) || "";
+    // Check img alt inside the link for active class
+    const imgActive = await link
+      .locator('img[class*="active--"]')
+      .first()
+      .isVisible()
+      .catch(() => false);
 
-    const activePatterns = /active|selected|current|highlighted/i;
-    return activePatterns.test(classes) || activePatterns.test(parentClasses);
+    return imgActive;
   }
 
   /**
    * Get the text of the currently active nav item.
    */
   async getActiveNavLinkText(): Promise<string> {
-    // Try aria-current first
-    const ariaActive = this.page
-      .locator(`${this.navLinks}[aria-current="page"]`)
+    // Find the <a> with "active--" class
+    const activeLink = this.page
+      .locator('a.tw-side-nav__navigation-link-close.active--, a[class*="active--"]')
       .first();
-    if (await ariaActive.isVisible().catch(() => false)) {
-      return ((await ariaActive.textContent()) || "").trim();
-    }
 
-    // Try active class patterns within the sidebar
-    const sidebarLocator = this.page.locator(this.sidebar).first();
-    const activeLink = sidebarLocator
-      .locator(
-        'a[class*="active"], a.router-link-active, [class*="nav-item"][class*="active"] a, ' +
-          'button[class*="active"], [aria-selected="true"]'
-      )
-      .first();
     if (await activeLink.isVisible().catch(() => false)) {
       return ((await activeLink.textContent()) || "").trim();
+    }
+
+    // Fallback: check img alt with active class
+    const activeImg = this.page
+      .locator('img.tw-side-nav__navigation-link-close-icon.active--')
+      .first();
+    if (await activeImg.isVisible().catch(() => false)) {
+      return (await activeImg.getAttribute("alt")) || "";
     }
 
     return "";

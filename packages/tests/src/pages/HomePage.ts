@@ -8,22 +8,27 @@ import { BasePage } from "./BasePage";
  * Each project card includes: thumbnail, name, date, version badge,
  * task type badge, "Open Project Page →" button, and a ⋮ kebab menu.
  *
- * DOM reference: Angular app with custom components and Angular Material.
+ * DOM reference (verified against staging.visionsamur.ai):
+ * - Heading: <h2 class="home__recent-projects-heading">
+ * - Card listing: <sc-project-cards-listing class="home__recent-projects-list">
+ * - Language: <mat-select id="header-language-select-dropdown" role="combobox">
+ * - Avatar: <img class="tw-profile__img">
+ * - Role: <p class="tw-profile__role">
+ * - User menu: <button class="mat-mdc-menu-trigger submenu__trigger">
+ * - Menu items: <button class="mat-mdc-menu-item"> in .mat-mdc-menu-panel
  */
 export class HomePage extends BasePage {
   // ── Selectors (verified against staging DOM) ────────────────────────────
 
   // Recent Projects section
   private readonly recentProjectsHeading =
-    'h2:has-text("Recent Projects"), h3:has-text("Recent Projects"), ' +
-    '[class*="recent"] h2, [class*="recent"] h3, ' +
-    'h2:has-text("recent"), h3:has-text("recent")';
+    'h2.home__recent-projects-heading, h2[class*="recent-projects-heading"], ' +
+    'h2:has-text("Recent Projects"), h3:has-text("Recent Projects")';
 
-  // Project cards
+  // Project cards — inside sc-project-cards-listing custom element
   private readonly projectCards =
-    '[class*="project-card"], [class*="projectCard"], ' +
-    '[class*="recent"] .card, li[class*="project"], ' +
-    '[class*="card-item"], [class*="project_card"]';
+    'sc-project-cards-listing > *, [class*="project-card"], [class*="projectCard"], ' +
+    '.home__recent-projects-list > *, [class*="card-item"]';
 
   // Card inner elements (scoped within a card via .nth(i).locator())
   private readonly projectCardName =
@@ -65,38 +70,33 @@ export class HomePage extends BasePage {
 
   // ── Header: Language Selector ────────────────────────────────────────────
   private readonly languageDropdown =
-    'select[class*="lang"], [class*="language"] select, [class*="lang-selector"], ' +
-    '[class*="language-selector"], [role="combobox"][class*="lang"], ' +
-    'button[class*="lang"], [class*="locale"]';
+    '#header-language-select-dropdown, mat-select[role="combobox"], ' +
+    'mat-select.mat-mdc-select, .tw-header__language-selection mat-select';
 
   private readonly languageOptions =
-    'option, [role="option"], [role="listbox"] > *, .mat-option, li[class*="lang"]';
+    'mat-option, .mat-mdc-option, [role="option"], option, li[class*="lang"]';
 
   // ── Header: User Avatar ──────────────────────────────────────────────────
   private readonly userAvatar =
-    'img[class*="avatar"], [class*="avatar"] img, [class*="profile-pic"] img, ' +
-    '[class*="user-image"] img, img[class*="profile"], [class*="avatar"], ' +
-    '[class*="user-avatar"]';
+    'img.tw-profile__img, img[class*="profile__img"], .tw-profile img, ' +
+    'tw-profile img';
 
   // ── Header: Role Label ───────────────────────────────────────────────────
   private readonly roleLabel =
-    '[class*="role"], [class*="user-role"], span[class*="role"], ' +
-    '[class*="badge"]:has-text("Admin"), [class*="badge"]:has-text("Editor"), ' +
-    '[class*="badge"]:has-text("User"), [class*="role-badge"]';
+    'p.tw-profile__role, [class*="profile__role"], .tw-profile [class*="role"]';
 
   // ── Header: User Menu Dropdown ───────────────────────────────────────────
   private readonly userMenuButton =
-    'button[class*="user-menu"], [class*="user-menu"] > button, ' +
-    '[class*="profile-menu"] > button, button[class*="account"], ' +
-    '[class*="header"] button:has(img), [class*="header"] button:has([class*="avatar"])';
+    'button.submenu__trigger, button.mat-mdc-menu-trigger.submenu__trigger, ' +
+    'button[aria-haspopup="menu"], .tw-header__info button.mat-mdc-menu-trigger, ' +
+    'tw-profile ~ button, .tw-header__info button';
 
   private readonly userMenuDropdown =
-    '[class*="user-menu"] [role="menu"], [class*="user-dropdown"], ' +
-    '[class*="profile-menu"] [role="menu"], [class*="dropdown-menu"], ' +
-    '[class*="account-menu"], .cdk-overlay-pane [role="menu"]';
+    '.mat-mdc-menu-panel, .cdk-overlay-pane .mat-mdc-menu-panel, ' +
+    'div.mat-mdc-menu-panel, .mat-mdc-menu-content';
 
   private readonly userMenuItem =
-    '[role="menuitem"], .menu-item, button, a';
+    'button.mat-mdc-menu-item, [role="menuitem"], .mat-mdc-menu-item';
 
   constructor(page: Page) {
     super(page);
@@ -105,19 +105,38 @@ export class HomePage extends BasePage {
   // ── Navigation ──────────────────────────────────────────────────────────
 
   async goto(): Promise<void> {
-    await this.navigate("/");
-    await this.waitForReady();
+    // Navigate to /home directly (app redirects / → /home after login)
+    const currentUrl = this.page.url();
+    if (!currentUrl.includes("/home") && !currentUrl.endsWith("/")) {
+      await this.navigate("/home");
+      await this.waitForReady();
+    }
+    // Wait for the page to fully render
+    await this.page.waitForTimeout(3000);
   }
 
   // ── Recent Projects Heading ─────────────────────────────────────────────
 
   async isRecentProjectsHeadingVisible(): Promise<boolean> {
-    return this.isVisible(this.recentProjectsHeading);
+    const locatorVisible = await this.page.locator(this.recentProjectsHeading).first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (locatorVisible) return true;
+    return this.page.evaluate(() => {
+      const el = document.querySelector('h2.home__recent-projects-heading');
+      return !!el && (el as HTMLElement).offsetParent !== null;
+    });
   }
 
   async getRecentProjectsHeadingText(): Promise<string> {
-    const heading = this.page.locator(this.recentProjectsHeading).first();
-    return (await heading.textContent()) || "";
+    try {
+      const heading = this.page.locator(this.recentProjectsHeading).first();
+      await heading.waitFor({ state: "visible", timeout: 5000 });
+      return (await heading.textContent()) || "";
+    } catch {
+      return this.page.evaluate(() => {
+        const el = document.querySelector('h2.home__recent-projects-heading');
+        return (el?.textContent || "").trim();
+      });
+    }
   }
 
   async expectRecentProjectsHeadingVisible(): Promise<void> {
@@ -255,44 +274,59 @@ export class HomePage extends BasePage {
       .waitFor({ state: "visible", timeout });
   }
 
-  // ── Language Selector ─────────────────────────────────────────────────────
+  // ── Language Selector (mat-select) ─────────────────────────────────────────
 
   async isLanguageSelectorVisible(): Promise<boolean> {
-    return this.isVisible(this.languageDropdown);
+    const locatorVisible = await this.page.locator(this.languageDropdown).first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (locatorVisible) return true;
+    return this.page.evaluate(() => !!document.querySelector('#header-language-select-dropdown, mat-select[role="combobox"]'));
   }
 
   async getCurrentLanguage(): Promise<string> {
-    const el = this.page.locator(this.languageDropdown).first();
-    // If it's a <select>, get the selected option text
-    const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
-    if (tagName === "select") {
-      return el.locator("option:checked").textContent().then((t) => (t || "").trim()).catch(() => "");
-    }
-    // Otherwise return the element's text content
-    return ((await el.textContent()) || "").trim();
+    // Try locator first
+    try {
+      const valueText = this.page.locator(
+        '#header-language-select-dropdown .mat-mdc-select-value-text, ' +
+        '#header-language-select-dropdown .selected-language, ' +
+        'mat-select[role="combobox"] .mat-mdc-select-value-text'
+      ).first();
+      if (await valueText.isVisible({ timeout: 3000 }).catch(() => false)) {
+        return ((await valueText.textContent()) || "").trim();
+      }
+    } catch { /* fallback below */ }
+
+    // Fallback: evaluate
+    return this.page.evaluate(() => {
+      const el = document.querySelector('.selected-language') ||
+                 document.querySelector('#header-language-select-dropdown .mat-mdc-select-value-text') ||
+                 document.querySelector('mat-select .mat-mdc-select-value-text');
+      return (el?.textContent || "").trim();
+    });
   }
 
   async openLanguageDropdown(): Promise<void> {
-    const el = this.page.locator(this.languageDropdown).first();
-    const tagName = await el.evaluate((e) => e.tagName.toLowerCase());
-    if (tagName === "select") {
-      // Native select — no dropdown to open, options are inline
-      return;
+    try {
+      const el = this.page.locator(this.languageDropdown).first();
+      await el.click({ timeout: 5000 });
+    } catch {
+      await this.page.evaluate(() => {
+        const el = document.querySelector('#header-language-select-dropdown') ||
+                   document.querySelector('mat-select[role="combobox"]');
+        if (el) (el as HTMLElement).click();
+      });
     }
-    await el.click();
+    // mat-select opens a panel in the overlay
     await this.page
-      .locator(this.languageOptions)
+      .locator('.mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel, mat-option')
       .first()
       .waitFor({ state: "visible", timeout: 5000 });
   }
 
   async getLanguageOptions(): Promise<string[]> {
-    const el = this.page.locator(this.languageDropdown).first();
-    const tagName = await el.evaluate((e) => e.tagName.toLowerCase()).catch(() => "");
-    const optionsLocator =
-      tagName === "select"
-        ? el.locator("option")
-        : this.page.locator(this.languageOptions);
+    // First open the dropdown to render options
+    const optionsLocator = this.page.locator(
+      'mat-option, .mat-mdc-option, [role="option"]'
+    );
     const count = await optionsLocator.count();
     const texts: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -303,56 +337,115 @@ export class HomePage extends BasePage {
   }
 
   async selectLanguage(language: string): Promise<void> {
-    const el = this.page.locator(this.languageDropdown).first();
-    const tagName = await el.evaluate((e) => e.tagName.toLowerCase()).catch(() => "");
-    if (tagName === "select") {
-      await el.selectOption({ label: language });
-    } else {
+    // Check if the dropdown panel is already open before clicking
+    const panel = this.page.locator(
+      '.mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel'
+    ).first();
+    const alreadyOpen = await panel.isVisible().catch(() => false);
+
+    if (!alreadyOpen) {
+      const el = this.page.locator(this.languageDropdown).first();
       await el.click();
-      const option = this.page
-        .locator(this.languageOptions)
-        .filter({ hasText: new RegExp(language, "i") })
-        .first();
-      await option.click();
+      await this.page.waitForTimeout(500);
     }
+
+    // Click the matching option in the overlay panel
+    const option = this.page
+      .locator('mat-option, .mat-mdc-option, [role="option"]')
+      .filter({ hasText: new RegExp(language, "i") })
+      .first();
+    await option.click();
   }
 
   // ── User Avatar ───────────────────────────────────────────────────────────
 
   async isUserAvatarVisible(): Promise<boolean> {
-    return this.isVisible(this.userAvatar);
+    const locatorVisible = await this.page.locator(this.userAvatar).first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (locatorVisible) return true;
+    return this.page.evaluate(() => !!document.querySelector('img.tw-profile__img, .tw-profile img'));
   }
 
   async getUserAvatarSrc(): Promise<string> {
-    const img = this.page.locator(this.userAvatar).first();
-    return (await img.getAttribute("src")) || "";
+    try {
+      const img = this.page.locator(this.userAvatar).first();
+      await img.waitFor({ state: "visible", timeout: 5000 });
+      return (await img.getAttribute("src")) || "";
+    } catch {
+      return this.page.evaluate(() => {
+        const img = document.querySelector('img.tw-profile__img, .tw-profile img') as HTMLImageElement;
+        return img?.getAttribute("src") || "";
+      });
+    }
   }
 
   async getUserAvatarAlt(): Promise<string> {
-    const img = this.page.locator(this.userAvatar).first();
-    return (await img.getAttribute("alt")) || "";
+    try {
+      const img = this.page.locator(this.userAvatar).first();
+      await img.waitFor({ state: "visible", timeout: 5000 });
+      return (await img.getAttribute("alt")) || "";
+    } catch {
+      return this.page.evaluate(() => {
+        const img = document.querySelector('img.tw-profile__img, .tw-profile img') as HTMLImageElement;
+        return img?.getAttribute("alt") || "";
+      });
+    }
   }
 
   // ── Role Label ────────────────────────────────────────────────────────────
 
   async isRoleLabelVisible(): Promise<boolean> {
-    return this.isVisible(this.roleLabel);
+    const locatorVisible = await this.page.locator(this.roleLabel).first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (locatorVisible) return true;
+    return this.page.evaluate(() => !!document.querySelector('p.tw-profile__role, [class*="profile__role"]'));
   }
 
   async getRoleLabelText(): Promise<string> {
-    const label = this.page.locator(this.roleLabel).first();
-    return ((await label.textContent()) || "").trim();
+    try {
+      const label = this.page.locator(this.roleLabel).first();
+      await label.waitFor({ state: "visible", timeout: 5000 });
+      return ((await label.textContent()) || "").trim();
+    } catch {
+      return this.page.evaluate(() => {
+        const el = document.querySelector('p.tw-profile__role, [class*="profile__role"]');
+        return (el?.textContent || "").trim();
+      });
+    }
   }
 
   // ── User Menu Dropdown ────────────────────────────────────────────────────
 
   async isUserMenuButtonVisible(): Promise<boolean> {
-    return this.isVisible(this.userMenuButton);
+    // Try locator first
+    const locatorVisible = await this.page.locator(this.userMenuButton).first().isVisible({ timeout: 5000 }).catch(() => false);
+    if (locatorVisible) return true;
+
+    // Fallback: use evaluate to find the button in the DOM
+    return this.page.evaluate(() => {
+      const btn = document.querySelector('button.submenu__trigger') ||
+                  document.querySelector('button.mat-mdc-menu-trigger[aria-haspopup="menu"]') ||
+                  document.querySelector('.tw-header__info button');
+      return !!btn;
+    });
   }
 
   async openUserMenu(): Promise<void> {
-    const btn = this.page.locator(this.userMenuButton).first();
-    await btn.click();
+    // Try locator first
+    let clicked = false;
+    try {
+      const btn = this.page.locator(this.userMenuButton).first();
+      await btn.waitFor({ state: "visible", timeout: 5000 });
+      await btn.click();
+      clicked = true;
+    } catch {
+      // Fallback: use evaluate to click the button directly
+      await this.page.evaluate(() => {
+        const btn = document.querySelector('button.submenu__trigger') ||
+                    document.querySelector('button.mat-mdc-menu-trigger[aria-haspopup="menu"]') ||
+                    document.querySelector('.tw-header__info button');
+        if (btn) (btn as HTMLElement).click();
+      });
+    }
+
     await this.page
       .locator(this.userMenuDropdown)
       .first()

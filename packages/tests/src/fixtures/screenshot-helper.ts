@@ -2,7 +2,17 @@ import type { Page, TestInfo } from "@playwright/test";
 import path from "path";
 import fs from "fs";
 
-const SCREENSHOT_DIR = path.resolve(__dirname, "../../test-screenshots");
+/**
+ * Generate a timestamped folder name once per test run.
+ * Format: run-YYYY-MM-DD_HH-MM-SS
+ */
+const RUN_TIMESTAMP = new Date()
+  .toISOString()
+  .replace(/[:.]/g, "-")
+  .replace("T", "_")
+  .substring(0, 19);
+
+const RUN_DIR = path.resolve(__dirname, `../../test-screenshots/${RUN_TIMESTAMP}`);
 
 /**
  * Sanitize a string for use as a filename.
@@ -20,7 +30,8 @@ function sanitize(name: string): string {
  * Takes a full-page screenshot after each test with human-readable naming.
  * Format: [PASS] describe-block - test-name.png  or  [FAIL] describe-block - test-name.png
  *
- * Screenshots are saved to packages/tests/test-screenshots/
+ * Each run gets its own timestamped folder:
+ *   test-screenshots/run-2026-06-24_14-30-00/
  */
 export async function takeResultScreenshot(
   page: Page,
@@ -41,11 +52,11 @@ export async function takeResultScreenshot(
       : "unknown";
   const testName = testInfo.title;
   const fileName = `[${prefix}] ${sanitize(describeBlock)} - ${sanitize(testName)}.png`;
-  const filePath = path.join(SCREENSHOT_DIR, fileName);
+  const filePath = path.join(RUN_DIR, fileName);
 
-  // Ensure directory exists
-  if (!fs.existsSync(SCREENSHOT_DIR)) {
-    fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+  // Ensure run directory exists
+  if (!fs.existsSync(RUN_DIR)) {
+    fs.mkdirSync(RUN_DIR, { recursive: true });
   }
 
   try {

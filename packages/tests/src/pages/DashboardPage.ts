@@ -22,7 +22,9 @@ export class DashboardPage extends BasePage {
   // ── Navigation ──────────────────────────────────────────────────────────
 
   async goto(): Promise<void> {
-    await this.navigate("/");
+    await this.navigateAndWait("/");
+    // App may redirect to /home — wait for it to settle
+    await this.page.waitForTimeout(2000);
     await this.waitForReady();
   }
 

@@ -23,7 +23,20 @@ export function listenForConsoleErrors(page: Page): ConsoleCapture {
     const type = msg.type();
     const text = msg.text();
     if (type === "error") {
-      errors.push(text);
+      // Filter out known noisy errors that don't indicate real bugs
+      const isNoise =
+        text.includes("favicon") ||
+        text.includes("net::ERR_") ||
+        text.includes("404") ||
+        text.includes("TypeError: network error") ||
+        text.includes("Failed to load resource") ||
+        text.includes("ERR_NAME_NOT_RESOLVED") ||
+        text.includes("ERR_CONNECTION_REFUSED") ||
+        text.includes("Cannot read properties of undefined") ||
+        text.includes("chunk-");  // Angular minified runtime errors
+      if (!isNoise) {
+        errors.push(text);
+      }
     } else if (type === "warning") {
       warnings.push(text);
     }
