@@ -1,5 +1,6 @@
 import { test as base } from "@playwright/test";
 import { LoginPage, DashboardPage, NavigationPage } from "../pages";
+import { takeResultScreenshot } from "./screenshot-helper";
 
 /**
  * Custom fixtures that inject Page Objects into every test.
@@ -22,6 +23,12 @@ export const test = base.extend<PageFixtures>({
 
   navigationPage: async ({ page }, use) => {
     await use(new NavigationPage(page));
+  },
+
+  // Auto-fixture: takes a screenshot after every test with readable naming
+  page: async ({ page }, use, testInfo) => {
+    await use(page);
+    await takeResultScreenshot(page, testInfo);
   },
 });
 

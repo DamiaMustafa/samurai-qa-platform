@@ -26,6 +26,12 @@ export class LoginPage extends BasePage {
   private readonly languageSelector = '[role="combobox"], .language-selector, .lang-selector, [class*="language"], [class*="lang-select"]';
   private readonly passwordToggle = 'button:has-text("Hide"), button:has-text("Show"), img[alt*="Hide"], img[alt*="Show"], img[alt*="hide"], img[alt*="show"]';
 
+  // ── Google OAuth popup selectors ──────────────────────────────────────
+  private readonly googleEmailInput = 'input[type="email"]';
+  private readonly googlePasswordInput = 'input[type="password"]';
+  private readonly googleNextButton = '#identifierNext, button:has-text("Next")';
+  private readonly googleSignInSubmit = '#passwordNext, button:has-text("Sign in")';
+
   constructor(page: Page) {
     super(page);
   }
@@ -213,6 +219,83 @@ export class LoginPage extends BasePage {
     return this.isVisible(this.googleSignInButton);
   }
 
+  async isGoogleSignInEnabled(): Promise<boolean> {
+    return this.page.locator(this.googleSignInButton).first().isEnabled();
+  }
+
+  async getGoogleSignInText(): Promise<string> {
+    return (
+      (await this.page
+        .locator(this.googleSignInButton)
+        .first()
+        .textContent())?.trim() || ""
+    );
+  }
+
+  getGoogleSignInButton() {
+    return this.page.locator(this.googleSignInButton).first();
+  }
+
+  async clickGoogleSignIn(): Promise<void> {
+    await this.page.locator(this.googleSignInButton).first().click();
+  }
+
+  /**
+   * Clicks the Google Sign-In button and waits for the OAuth popup to open.
+   * Returns the popup Page for further interaction.
+   */
+  async clickGoogleSignInAndWaitForPopup(): Promise<Page> {
+    const [popup] = await Promise.all([
+      this.page.context().waitForEvent("page", { timeout: 15000 }),
+      this.page.locator(this.googleSignInButton).first().click(),
+    ]);
+    await popup.waitForLoadState("domcontentloaded");
+    return popup;
+  }
+
+  /**
+   * Fills the email field inside the Google OAuth popup and clicks Next.
+   */
+  async fillGoogleEmail(popup: Page, email: string): Promise<void> {
+    const emailField = popup.locator(this.googleEmailInput).first();
+    await emailField.waitFor({ state: "visible", timeout: 10000 });
+    await emailField.fill(email);
+    await popup.locator(this.googleNextButton).first().click();
+    // Wait for the password step to appear
+    await popup.waitForTimeout(2000);
+  }
+
+  /**
+   * Fills the password field inside the Google OAuth popup and clicks Sign in.
+   */
+  async fillGooglePassword(popup: Page, password: string): Promise<void> {
+    const passwordField = popup.locator(this.googlePasswordInput).first();
+    await passwordField.waitFor({ state: "visible", timeout: 10000 });
+    await passwordField.fill(password);
+    await popup.locator(this.googleSignInSubmit).first().click();
+  }
+
+  /**
+   * Waits for the Google OAuth popup to redirect back to the app and close.
+   */
+  async waitForGoogleRedirect(popup: Page): Promise<void> {
+    // Wait for the popup to close (Google redirects back to the app)
+    try {
+      await popup.waitForEvent("close", { timeout: 30000 });
+    } catch {
+      // Popup may not close in all flows — check if main page navigated away from sign-in
+    }
+    // Wait for the main page to finish processing the auth callback
+    await this.waitForReady();
+    await this.page
+      .locator("body")
+      .waitFor({ state: "visible", timeout: 15000 });
+    await this.page.waitForFunction(
+      () => !document.body.innerText.includes("Hold on"),
+      { timeout: 15000 }
+    );
+  }
+
   async isLanguageSelectorVisible(): Promise<boolean> {
     // Try combobox role first (accessibility tree), then CSS selectors
     const byRole = this.page.getByRole("combobox");
@@ -227,6 +310,156 @@ export class LoginPage extends BasePage {
     }
     const selector = this.page.locator(this.languageSelector).first();
     return (await selector.textContent())?.trim() || "";
+  }
+
+  /**
+   * Opens the language selector dropdown/listbox.
+   */
+  async openLanguageSelector(): Promise<void> {
+    const byRole = this.page.getByRole("combobox").first();
+    if (await byRole.isVisible().catch(() => false)) {
+      await byRole.click();
+      return;
+    }
+    await this.page.locator(this.languageSelector).first().click();
+  }
+
+  /**
+   * Returns all available language options from the dropdown.
+   */
+  async getAvailableLanguages(): Promise<string[]> {
+    // Try listbox options first (Material / ARIA pattern)
+    const listboxOptions = this.page.locator(
+      '[role="listbox"] [role="option"], mat-option, .language-option, .lang-option'
+    );
+    const count = await listboxOptions.count();
+    if (count > 0) {
+      const texts: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const text = (await listboxOptions.nth(i).textContent())?.trim();
+        if (text) texts.push(text);
+      }
+      return texts;
+    }
+
+    // Fallback: look for dropdown items that appeared after opening
+    const dropdownItems = this.page.locator(
+      '.mat-select-panel li, .cdk-overlay-pane li, [class*="dropdown"] li, select option'
+    );
+    const itemCount = await dropdownItems.count();
+    const texts: string[] = [];
+    for (let i = 0; i < itemCount; i++) {
+      const text = (await dropdownItems.nth(i).textContent())?.trim();
+      if (text) texts.push(text);
+    }
+    return texts;
+  }
+
+  /**
+   * Selects a language by its visible text (e.g. "Malay", "中文").
+   */
+  async selectLanguage(language: string): Promise<void> {
+    await this.openLanguageSelector();
+    // Wait for options to appear
+    await this.page.waitForTimeout(500);
+
+    // Try listbox option first
+    const option = this.page
+      .locator(
+        '[role="listbox"] [role="option"], mat-option, .language-option, .lang-option'
+      )
+      .filter({ hasText: new RegExp(language, "i") })
+      .first();
+
+    if (await option.isVisible().catch(() => false)) {
+      await option.click();
+      await this.waitForReady();
+      return;
+    }
+
+    // Fallback: dropdown items
+    const dropdownItem = this.page
+      .locator(
+        '.mat-select-panel li, .cdk-overlay-pane li, [class*="dropdown"] li, select option'
+      )
+      .filter({ hasText: new RegExp(language, "i") })
+      .first();
+
+    if (await dropdownItem.isVisible().catch(() => false)) {
+      await dropdownItem.click();
+      await this.waitForReady();
+      return;
+    }
+
+    // Last resort: click any visible element with the language name
+    await this.page.getByText(new RegExp(language, "i")).first().click();
+    await this.waitForReady();
+  }
+
+  /**
+   * Captures translatable text content from the login page for comparison.
+   * Returns a snapshot of key UI strings that should change on language switch.
+   */
+  async getPageTranslationSnapshot(): Promise<Record<string, string>> {
+    const snapshot: Record<string, string> = {};
+
+    // Page heading / welcome text
+    const heading = this.page.locator("h1").first();
+    if (await heading.isVisible().catch(() => false)) {
+      snapshot["heading"] = (await heading.textContent())?.trim() || "";
+    }
+
+    // "Log in" section heading
+    const h2 = this.page.locator("h2").first();
+    if (await h2.isVisible().catch(() => false)) {
+      snapshot["subheading"] = (await h2.textContent())?.trim() || "";
+    }
+
+    // Email label
+    const emailLabel = this.page.locator(
+      'label:has-text("Email"), label:has-text("email"), #login-email label'
+    ).first();
+    if (await emailLabel.isVisible().catch(() => false)) {
+      snapshot["emailLabel"] = (await emailLabel.textContent())?.trim() || "";
+    }
+
+    // Password label
+    const passwordLabel = this.page.locator(
+      'label:has-text("Password"), label:has-text("password"), #login-password label'
+    ).first();
+    if (await passwordLabel.isVisible().catch(() => false)) {
+      snapshot["passwordLabel"] =
+        (await passwordLabel.textContent())?.trim() || "";
+    }
+
+    // Submit button text
+    const submitBtn = this.page.locator(this.submitButton).first();
+    if (await submitBtn.isVisible().catch(() => false)) {
+      snapshot["submitButton"] =
+        (await submitBtn.textContent())?.trim() || "";
+    }
+
+    // Forgot password link text
+    const forgotLink = this.page.locator(this.forgotPasswordLink).first();
+    if (await forgotLink.isVisible().catch(() => false)) {
+      snapshot["forgotPassword"] =
+        (await forgotLink.textContent())?.trim() || "";
+    }
+
+    // Sign up link text
+    const signUp = this.page.locator(this.signUpLink).first();
+    if (await signUp.isVisible().catch(() => false)) {
+      snapshot["signUp"] = (await signUp.textContent())?.trim() || "";
+    }
+
+    // Google sign-in button text
+    const googleBtn = this.page.locator(this.googleSignInButton).first();
+    if (await googleBtn.isVisible().catch(() => false)) {
+      snapshot["googleSignIn"] =
+        (await googleBtn.textContent())?.trim() || "";
+    }
+
+    return snapshot;
   }
 
   async isPasswordToggleVisible(): Promise<boolean> {

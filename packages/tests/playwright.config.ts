@@ -22,7 +22,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.BASE_URL || "https://staging.visionsamur.ai",
     trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    screenshot: "off",
     video: "retain-on-failure",
     actionTimeout: 15000,
     navigationTimeout: 30000,

@@ -15,6 +15,10 @@ export const envConfig = {
       username: process.env.STANDARD_USERNAME || process.env.STAGING_EMAIL || "",
       password: process.env.STANDARD_PASSWORD || process.env.STAGING_PASSWORD || "",
     },
+    google: {
+      email: process.env.GOOGLE_EMAIL || "",
+      password: process.env.GOOGLE_PASSWORD || "",
+    },
   },
   dashboardApiUrl:
     process.env.DASHBOARD_API_URL || "http://localhost:3000/api",
