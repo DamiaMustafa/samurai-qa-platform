@@ -11,3 +11,6 @@ export { WorkflowListingPage } from "./WorkflowListingPage";
 export { UserManagementPage } from "./UserManagementPage";
 export { PlanPage } from "./PlanPage";
 export { ProjectCreationPage } from "./ProjectCreationPage";
+export { SignUpPage } from "./SignUpPage";
+export { ForgotPasswordPage } from "./ForgotPasswordPage";
+export { ChangePasswordPage } from "./ChangePasswordPage";

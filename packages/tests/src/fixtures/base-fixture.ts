@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -20,6 +20,9 @@ export type PageFixtures = {
   userManagementPage: UserManagementPage;
   planPage: PlanPage;
   projectCreationPage: ProjectCreationPage;
+  signUpPage: SignUpPage;
+  forgotPasswordPage: ForgotPasswordPage;
+  changePasswordPage: ChangePasswordPage;
   consoleErrors: ReturnType<typeof listenForConsoleErrors>;
 };
 
@@ -70,6 +73,18 @@ export const test = base.extend<PageFixtures>({
 
   projectCreationPage: async ({ page }, use) => {
     await use(new ProjectCreationPage(page));
+  },
+
+  signUpPage: async ({ page }, use) => {
+    await use(new SignUpPage(page));
+  },
+
+  forgotPasswordPage: async ({ page }, use) => {
+    await use(new ForgotPasswordPage(page));
+  },
+
+  changePasswordPage: async ({ page }, use) => {
+    await use(new ChangePasswordPage(page));
   },
 
   consoleErrors: async ({ page }, use) => {
