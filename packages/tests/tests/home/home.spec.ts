@@ -299,3 +299,194 @@ test.describe("Home Page - Kebab Menu @home @menu", () => {
     expect(dialogVisible || menuClosed).toBe(true);
   });
 });
+
+// ─── Block 6: Language Selector ───────────────────────────────────────────────
+test.describe("Home Page - Language Selector @home @i18n", () => {
+  test.skip(
+    !envConfig.credentials.admin.username,
+    "Admin credentials not configured in .env"
+  );
+
+  test.beforeEach(async ({ loginPage, homePage }) => {
+    await loginPage.loginAs("admin");
+    const error = await loginPage.getLoginErrorMessage();
+    test.skip(!!error, `Login blocked by environment: ${error}`);
+    await homePage.goto();
+  });
+
+  test("should display the language selector", async ({ homePage }) => {
+    const visible = await homePage.isLanguageSelectorVisible();
+    expect(visible).toBe(true);
+  });
+
+  test("should show the current language", async ({ homePage }) => {
+    const language = await homePage.getCurrentLanguage();
+    expect(language.length).toBeGreaterThan(0);
+  });
+
+  test("should have at least one language option available", async ({
+    homePage,
+  }) => {
+    await homePage.openLanguageDropdown();
+    const options = await homePage.getLanguageOptions();
+    expect(options.length).toBeGreaterThan(0);
+  });
+
+  test("selecting a language should change the current language", async ({
+    homePage,
+  }) => {
+    await homePage.openLanguageDropdown();
+    const options = await homePage.getLanguageOptions();
+
+    // Skip if only one language available
+    test.skip(
+      options.length < 2,
+      "Only one language available — cannot test selection"
+    );
+
+    // Pick a different language (second option)
+    const currentLang = await homePage.getCurrentLanguage();
+    const otherLang = options.find(
+      (opt) => opt.toLowerCase() !== currentLang.toLowerCase()
+    );
+    if (!otherLang) {
+      test.skip(true, "No different language found to switch to");
+      return;
+    }
+
+    await homePage.selectLanguage(otherLang);
+
+    // Verify the language changed
+    const newLang = await homePage.getCurrentLanguage();
+    expect(newLang.toLowerCase()).toContain(otherLang.toLowerCase());
+  });
+});
+
+// ─── Block 7: User Avatar & Role ─────────────────────────────────────────────
+test.describe("Home Page - User Avatar and Role @home @header", () => {
+  test.skip(
+    !envConfig.credentials.admin.username,
+    "Admin credentials not configured in .env"
+  );
+
+  test.beforeEach(async ({ loginPage, homePage }) => {
+    await loginPage.loginAs("admin");
+    const error = await loginPage.getLoginErrorMessage();
+    test.skip(!!error, `Login blocked by environment: ${error}`);
+    await homePage.goto();
+  });
+
+  test("should display the user avatar image", async ({ homePage }) => {
+    const visible = await homePage.isUserAvatarVisible();
+    expect(visible).toBe(true);
+  });
+
+  test("user avatar should have a valid image source", async ({ homePage }) => {
+    const src = await homePage.getUserAvatarSrc();
+    expect(src.length).toBeGreaterThan(0);
+  });
+
+  test("should display the user role label", async ({ homePage }) => {
+    const visible = await homePage.isRoleLabelVisible();
+    expect(visible).toBe(true);
+  });
+
+  test("role label should contain a meaningful role name", async ({
+    homePage,
+  }) => {
+    const role = await homePage.getRoleLabelText();
+    expect(role.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── Block 8: User Menu Dropdown ──────────────────────────────────────────────
+test.describe("Home Page - User Menu Dropdown @home @menu", () => {
+  test.skip(
+    !envConfig.credentials.admin.username,
+    "Admin credentials not configured in .env"
+  );
+
+  test.beforeEach(async ({ loginPage, homePage }) => {
+    await loginPage.loginAs("admin");
+    const error = await loginPage.getLoginErrorMessage();
+    test.skip(!!error, `Login blocked by environment: ${error}`);
+    await homePage.goto();
+  });
+
+  test("should display the user menu button", async ({ homePage }) => {
+    const visible = await homePage.isUserMenuButtonVisible();
+    expect(visible).toBe(true);
+  });
+
+  test("clicking user menu should open the dropdown", async ({ homePage }) => {
+    await homePage.openUserMenu();
+    const isOpen = await homePage.isUserMenuOpen();
+    expect(isOpen).toBe(true);
+  });
+
+  test("user menu should contain API Key, Profile, and Logout options", async ({
+    homePage,
+  }) => {
+    await homePage.openUserMenu();
+    const items = await homePage.getUserMenuItems();
+    const itemsLower = items.map((item) => item.toLowerCase());
+
+    const expectedActions = ["api key", "profile", "logout"];
+    for (const action of expectedActions) {
+      const found = itemsLower.some((item) => item.includes(action));
+      expect(found).toBe(true);
+    }
+  });
+
+  test("user menu should close when clicking outside", async ({ homePage }) => {
+    await homePage.openUserMenu();
+    expect(await homePage.isUserMenuOpen()).toBe(true);
+
+    await homePage.closeUserMenu();
+    expect(await homePage.isUserMenuOpen()).toBe(false);
+  });
+
+  test('clicking "API Key" should navigate or open a dialog', async ({
+    homePage,
+    page,
+  }) => {
+    await homePage.openUserMenu();
+    await homePage.clickUserMenuItem("API Key");
+
+    // Either a dialog/modal opens or the page navigates
+    const dialogVisible = await page
+      .locator(
+        '[role="dialog"], .mat-mdc-dialog-container, [class*="modal"], [class*="api-key"]'
+      )
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    const urlChanged = !page.url().endsWith("/");
+
+    expect(dialogVisible || urlChanged).toBe(true);
+  });
+
+  test('clicking "Profile" should navigate to profile page', async ({
+    homePage,
+    page,
+  }) => {
+    await homePage.openUserMenu();
+    await homePage.clickUserMenuItem("Profile");
+
+    // URL should change to a profile route
+    const url = page.url();
+    expect(url).not.toMatch(/\/$/); // no longer just the root "/"
+  });
+
+  test('clicking "Logout" should sign the user out', async ({
+    homePage,
+    page,
+  }) => {
+    await homePage.openUserMenu();
+    await homePage.clickUserMenuItem("Logout");
+
+    // Should redirect to sign-in page
+    await expect(page).toHaveURL(/sign-in|login|signin/, { timeout: 15000 });
+  });
+});
