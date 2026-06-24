@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -23,6 +23,14 @@ export type PageFixtures = {
   signUpPage: SignUpPage;
   forgotPasswordPage: ForgotPasswordPage;
   changePasswordPage: ChangePasswordPage;
+  projectOverviewPage: ProjectOverviewPage;
+  projectDatasetPage: ProjectDatasetPage;
+  manageLabelsPage: ManageLabelsPage;
+  manageTagsPage: ManageTagsPage;
+  trainPage: TrainPage;
+  deployPage: DeployPage;
+  datasetOverviewPage: DatasetOverviewPage;
+  labelingTasksListPage: LabelingTasksListPage;
   consoleErrors: ReturnType<typeof listenForConsoleErrors>;
 };
 
@@ -85,6 +93,38 @@ export const test = base.extend<PageFixtures>({
 
   changePasswordPage: async ({ page }, use) => {
     await use(new ChangePasswordPage(page));
+  },
+
+  projectOverviewPage: async ({ page }, use) => {
+    await use(new ProjectOverviewPage(page));
+  },
+
+  projectDatasetPage: async ({ page }, use) => {
+    await use(new ProjectDatasetPage(page));
+  },
+
+  manageLabelsPage: async ({ page }, use) => {
+    await use(new ManageLabelsPage(page));
+  },
+
+  manageTagsPage: async ({ page }, use) => {
+    await use(new ManageTagsPage(page));
+  },
+
+  trainPage: async ({ page }, use) => {
+    await use(new TrainPage(page));
+  },
+
+  deployPage: async ({ page }, use) => {
+    await use(new DeployPage(page));
+  },
+
+  datasetOverviewPage: async ({ page }, use) => {
+    await use(new DatasetOverviewPage(page));
+  },
+
+  labelingTasksListPage: async ({ page }, use) => {
+    await use(new LabelingTasksListPage(page));
   },
 
   consoleErrors: async ({ page }, use) => {

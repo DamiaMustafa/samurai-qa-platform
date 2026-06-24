@@ -18,13 +18,15 @@ test.describe("Sidebar Navigation @home @navigation @sidebar", () => {
     await navigationPage.goToHome();
   });
 
-  test("sidebar should be visible", async ({ navigationPage }) => {
+  test("sidebar should be visible", async ({ navigationPage, consoleErrors }) => {
     const visible = await navigationPage.isSidebarVisible();
     expect(visible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("sidebar should contain all expected nav items", async ({
     navigationPage,
+    consoleErrors,
   }) => {
     const links = await navigationPage.getNavLinks();
     const linksLower = links.map((l) => l.toLowerCase());
@@ -44,6 +46,7 @@ test.describe("Sidebar Navigation @home @navigation @sidebar", () => {
       const found = linksLower.some((link) => link.includes(item));
       expect(found).toBe(true);
     }
+    consoleErrors.assertNoErrors();
   });
 
   test('clicking "Home" navigates to the home route', async ({
@@ -262,9 +265,11 @@ test.describe("Sidebar Active State @home @navigation @active", () => {
 
   test("Home nav item should be active on the home page", async ({
     navigationPage,
+    consoleErrors,
   }) => {
     const activeText = await navigationPage.getActiveNavLinkText();
     expect(activeText.toLowerCase()).toContain("home");
+    consoleErrors.assertNoErrors();
   });
 
   test("navigating to Projects updates the active nav item", async ({

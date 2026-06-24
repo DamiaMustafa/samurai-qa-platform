@@ -1,0 +1,16 @@
+## Unreleased
+
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)
+- **feat:** add auth page tests - sign up (11), forgot password (8), change password (10) = 29 tests passing (2026-06-25, 661794c)

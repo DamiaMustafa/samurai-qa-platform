@@ -1,13 +1,7 @@
 import { test, expect } from "../../src/fixtures";
-import { envConfig } from "../../src/config/environments";
 
-// ─── Block 1: Change Password Page Layout ─────────────────────────────────────
+// ─── Block 1: Change Password Page Layout ────────────────────────────────────
 test.describe("Change Password - Layout @change-password @smoke", () => {
-  test.skip(
-    !envConfig.credentials.admin.username,
-    "Admin credentials not configured in .env"
-  );
-
   test.beforeEach(async ({ loginPage, changePasswordPage }) => {
     await loginPage.loginAs("admin");
     const error = await loginPage.getLoginErrorMessage();
@@ -21,44 +15,39 @@ test.describe("Change Password - Layout @change-password @smoke", () => {
     consoleErrors.assertNoErrors();
   });
 
-  test("should display old password input", async ({ changePasswordPage, consoleErrors }) => {
+  test("should display the old password input", async ({ changePasswordPage, consoleErrors }) => {
     const visible = await changePasswordPage.isOldPasswordVisible();
     expect(visible).toBe(true);
     consoleErrors.assertNoErrors();
   });
 
-  test("should display new password input", async ({ changePasswordPage, consoleErrors }) => {
+  test("should display the new password input", async ({ changePasswordPage, consoleErrors }) => {
     const visible = await changePasswordPage.isNewPasswordVisible();
     expect(visible).toBe(true);
     consoleErrors.assertNoErrors();
   });
 
-  test("should display confirm password input", async ({ changePasswordPage, consoleErrors }) => {
+  test("should display the confirm password input", async ({ changePasswordPage, consoleErrors }) => {
     const visible = await changePasswordPage.isConfirmPasswordVisible();
     expect(visible).toBe(true);
     consoleErrors.assertNoErrors();
   });
 
-  test("should display submit button", async ({ changePasswordPage, consoleErrors }) => {
+  test("should display the submit button", async ({ changePasswordPage, consoleErrors }) => {
     const visible = await changePasswordPage.isSubmitButtonVisible();
     expect(visible).toBe(true);
     consoleErrors.assertNoErrors();
   });
 
-  test("should display cancel button", async ({ changePasswordPage, consoleErrors }) => {
+  test("should display the cancel button", async ({ changePasswordPage, consoleErrors }) => {
     const visible = await changePasswordPage.isCancelButtonVisible();
     expect(visible).toBe(true);
     consoleErrors.assertNoErrors();
   });
 });
 
-// ─── Block 2: Change Password Validation ──────────────────────────────────────
+// ─── Block 2: Change Password Validation ─────────────────────────────────────
 test.describe("Change Password - Validation @change-password @validation", () => {
-  test.skip(
-    !envConfig.credentials.admin.username,
-    "Admin credentials not configured in .env"
-  );
-
   test.beforeEach(async ({ loginPage, changePasswordPage }) => {
     await loginPage.loginAs("admin");
     const error = await loginPage.getLoginErrorMessage();
@@ -72,15 +61,22 @@ test.describe("Change Password - Validation @change-password @validation", () =>
     consoleErrors.assertNoErrors();
   });
 
-  test("should fill all password fields", async ({ changePasswordPage, consoleErrors }) => {
-    await changePasswordPage.fillOldPassword("CurrentPass123!");
-    await changePasswordPage.fillNewPassword("NewPass456!");
-    await changePasswordPage.fillConfirmPassword("NewPass456!");
-    // No errors after filling
+  test("should fill old password field", async ({ changePasswordPage, consoleErrors }) => {
+    await changePasswordPage.fillOldPassword("oldpass123");
     consoleErrors.assertNoErrors();
   });
 
-  test("cancel should navigate to home", async ({ changePasswordPage, consoleErrors }) => {
+  test("should fill new password field", async ({ changePasswordPage, consoleErrors }) => {
+    await changePasswordPage.fillNewPassword("NewPass123!");
+    consoleErrors.assertNoErrors();
+  });
+
+  test("should fill confirm password field", async ({ changePasswordPage, consoleErrors }) => {
+    await changePasswordPage.fillConfirmPassword("NewPass123!");
+    consoleErrors.assertNoErrors();
+  });
+
+  test("cancel should navigate back to home", async ({ changePasswordPage, consoleErrors }) => {
     await changePasswordPage.clickCancel();
     await changePasswordPage.expectHomeNavigation();
     consoleErrors.assertNoErrors();
@@ -89,11 +85,6 @@ test.describe("Change Password - Validation @change-password @validation", () =>
 
 // ─── Block 3: Console Errors ──────────────────────────────────────────────────
 test.describe("Change Password - Console Errors @change-password @console", () => {
-  test.skip(
-    !envConfig.credentials.admin.username,
-    "Admin credentials not configured in .env"
-  );
-
   test.beforeEach(async ({ loginPage, changePasswordPage }) => {
     await loginPage.loginAs("admin");
     const error = await loginPage.getLoginErrorMessage();
