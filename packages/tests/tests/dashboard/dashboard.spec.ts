@@ -14,22 +14,26 @@ test.describe("Dashboard Page @smoke @dashboard", () => {
     test.skip(!!error, `Login blocked by environment: ${error}`);
   });
 
-  test("should load the dashboard after login", async ({ dashboardPage }) => {
+  test("should load the dashboard after login", async ({ dashboardPage, consoleErrors }) => {
     await dashboardPage.goto();
     const loaded = await dashboardPage.isLoaded();
     expect(loaded).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
-  test("should display main content area", async ({ dashboardPage }) => {
+  test("should display main content area", async ({ dashboardPage, consoleErrors }) => {
     await dashboardPage.goto();
     await dashboardPage.expectDashboardLoaded();
+    consoleErrors.assertNoErrors();
   });
 
   test("dashboard page title should be meaningful", async ({
     dashboardPage,
+    consoleErrors,
   }) => {
     await dashboardPage.goto();
     const title = await dashboardPage.getTitle();
     expect(title.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 });

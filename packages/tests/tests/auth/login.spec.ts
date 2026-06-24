@@ -2,20 +2,23 @@ import { test, expect } from "../../src/fixtures";
 import { envConfig } from "../../src/config/environments";
 
 test.describe("Login Page @smoke @auth", () => {
-  test("should display the login page", async ({ loginPage }) => {
+  test("should display the login page", async ({ loginPage, consoleErrors }) => {
     await loginPage.goto();
     await loginPage.expectLoginPage();
     const isFormVisible = await loginPage.isLoginFormVisible();
     expect(isFormVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
-  test("should show error with invalid credentials", async ({ loginPage }) => {
+  test("should show error with invalid credentials", async ({ loginPage, consoleErrors }) => {
     await loginPage.loginWithInvalidCredentials();
     await loginPage.expectLoginError();
+    consoleErrors.assertNoErrors();
   });
 
   test("should login successfully with valid admin credentials", async ({
     loginPage,
+    consoleErrors,
   }) => {
     // This test requires ADMIN_USERNAME and ADMIN_PASSWORD in .env
     test.skip(
@@ -27,10 +30,12 @@ test.describe("Login Page @smoke @auth", () => {
     const error = await loginPage.getLoginErrorMessage();
     test.skip(!!error, `Login blocked by environment: ${error}`);
     await loginPage.expectSuccessfulLogin();
+    consoleErrors.assertNoErrors();
   });
 
   test("should login successfully with valid standard credentials", async ({
     loginPage,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.standard.username,
@@ -41,10 +46,12 @@ test.describe("Login Page @smoke @auth", () => {
     const error = await loginPage.getLoginErrorMessage();
     test.skip(!!error, `Login blocked by environment: ${error}`);
     await loginPage.expectSuccessfulLogin();
+    consoleErrors.assertNoErrors();
   });
 
   test("login form should have email and password fields", async ({
     loginPage,
+    consoleErrors,
   }) => {
     await loginPage.goto();
 
@@ -56,12 +63,14 @@ test.describe("Login Page @smoke @auth", () => {
     expect(emailVisible).toBe(true);
     expect(passwordVisible).toBe(true);
     expect(submitVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
-  test("should display forgot password link", async ({ loginPage }) => {
+  test("should display forgot password link", async ({ loginPage, consoleErrors }) => {
     await loginPage.goto();
     const forgotVisible = await loginPage.isForgotPasswordLinkVisible();
     expect(forgotVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -72,14 +81,17 @@ test.describe("Login Validation @auth @validation", () => {
 
   test("submit button should be disabled when form is empty", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const enabled = await loginPage.isSubmitButtonEnabled();
     expect(enabled).toBe(false);
+    consoleErrors.assertNoErrors();
   });
 
   test("submit button should be enabled when both fields are filled", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await page
       .locator('#login-email input[type="email"], input#login-email, input[type="email"]')
@@ -91,10 +103,12 @@ test.describe("Login Validation @auth @validation", () => {
       .fill("password123");
     const enabled = await loginPage.isSubmitButtonEnabled();
     expect(enabled).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("should show validation error for invalid email format", async ({
     loginPage,
+    consoleErrors,
   }) => {
     await loginPage.fillEmailOnly("notanemail");
     // Attempt submit to trigger validation
@@ -107,33 +121,39 @@ test.describe("Login Validation @auth @validation", () => {
     // Either an inline validation error or the button stays disabled
     const buttonStillDisabled = !(await loginPage.isSubmitButtonEnabled());
     expect(error !== null || buttonStillDisabled).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("should not submit with empty email field", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Fill only password, leave email empty
     await loginPage.fillPasswordOnly("somepassword");
     const enabled = await loginPage.isSubmitButtonEnabled();
     // Button should remain disabled when email is empty
     expect(enabled).toBe(false);
+    consoleErrors.assertNoErrors();
   });
 
   test("should not submit with empty password field", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Fill only email, leave password empty
     await loginPage.fillEmailOnly("user@test.com");
     const enabled = await loginPage.isSubmitButtonEnabled();
     // Button should remain disabled when password is empty
     expect(enabled).toBe(false);
+    consoleErrors.assertNoErrors();
   });
 
   test("should stay on sign-in page when submitting empty form", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Try clicking submit on empty form (force click past disabled state)
     await page
@@ -142,6 +162,7 @@ test.describe("Login Validation @auth @validation", () => {
       .click({ force: true });
     // Should remain on sign-in page
     expect(page.url()).toContain("sign-in");
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -150,49 +171,59 @@ test.describe("Login Navigation @auth @navigation", () => {
     await loginPage.goto();
   });
 
-  test("should display sign up link", async ({ loginPage }) => {
+  test("should display sign up link", async ({ loginPage, consoleErrors }) => {
     const signUpVisible = await loginPage.isSignUpLinkVisible();
     expect(signUpVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("sign up link should navigate to sign-up page", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.clickSignUp();
     await expect(page).toHaveURL(/sign-up|register|signup/, { timeout: 10000 });
+    consoleErrors.assertNoErrors();
   });
 
   test("forgot password link should navigate to forgot-password page", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.clickForgotPassword();
     await expect(page).toHaveURL(/forgot.password|reset.password|recover/, {
       timeout: 10000,
     });
+    consoleErrors.assertNoErrors();
   });
 
-  test("should display Google sign-in button", async ({ loginPage }) => {
+  test("should display Google sign-in button", async ({ loginPage, consoleErrors }) => {
     const googleVisible = await loginPage.isGoogleSignInVisible();
     expect(googleVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
-  test("should display language selector", async ({ loginPage }) => {
+  test("should display language selector", async ({ loginPage, consoleErrors }) => {
     const langVisible = await loginPage.isLanguageSelectorVisible();
     expect(langVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("language selector should show current language", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const language = await loginPage.getCurrentLanguage();
     expect(language.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
   test("should be able to navigate back from sign-up to sign-in", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.clickSignUp();
     // Verify we navigated away
@@ -200,6 +231,7 @@ test.describe("Login Navigation @auth @navigation", () => {
     // Navigate back
     await page.goBack();
     await expect(page).toHaveURL(/sign-in/, { timeout: 10000 });
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -208,14 +240,16 @@ test.describe("Login Security & UX @auth @security", () => {
     await loginPage.goto();
   });
 
-  test("password field should mask input by default", async ({ loginPage }) => {
+  test("password field should mask input by default", async ({ loginPage, consoleErrors }) => {
     const inputType = await loginPage.getPasswordInputType();
     expect(inputType).toBe("password");
+    consoleErrors.assertNoErrors();
   });
 
   test("password visibility toggle should switch between hidden and visible", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Fill a password so the toggle is relevant
     await loginPage.fillPassword("testpassword123");
@@ -238,11 +272,13 @@ test.describe("Login Security & UX @auth @security", () => {
       // If no toggle exists, just verify the field stays masked
       expect(inputType).toBe("password");
     }
+    consoleErrors.assertNoErrors();
   });
 
   test("pressing Enter in password field should submit the form", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.fillEmail("user@test.com");
     await loginPage.fillPassword("password123");
@@ -264,11 +300,13 @@ test.describe("Login Security & UX @auth @security", () => {
     // Either an API call was made or an error appeared
     const error = await loginPage.getLoginErrorMessage();
     expect(apiCalls.length > 0 || error !== null || true).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("password field should have a visibility toggle button", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.fillPassword("testpassword");
     // The toggle can be a button or an img with cursor pointer
@@ -279,6 +317,7 @@ test.describe("Login Security & UX @auth @security", () => {
     const passwordContainer = page.locator("#login-password").first();
     const clickableInside = passwordContainer.locator("img, button").first();
     await expect(clickableInside).toBeVisible({ timeout: 5000 });
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -289,45 +328,56 @@ test.describe("Login Accessibility @auth @a11y", () => {
 
   test("email input should have an accessible label", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const name = await loginPage.getEmailAccessibleName();
     expect(name.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
   test("password input should have an accessible label", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const name = await loginPage.getPasswordAccessibleName();
     expect(name.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
-  test("submit button should have accessible name", async ({ loginPage }) => {
+  test("submit button should have accessible name", async ({ loginPage, consoleErrors }) => {
     const name = await loginPage.getSubmitButtonAccessibleName();
     expect(name.length).toBeGreaterThan(0);
     expect(name.toLowerCase()).toContain("sign");
+    consoleErrors.assertNoErrors();
   });
 
   test("Google sign-in button should have accessible name", async ({
     page,
+    consoleErrors,
   }) => {
     const button = page.getByRole("button", { name: /sign in with google/i });
     await expect(button).toBeVisible();
+    consoleErrors.assertNoErrors();
   });
 
   test("forgot password link should be accessible by role", async ({
     page,
+    consoleErrors,
   }) => {
     const link = page.getByRole("link", { name: /forgot password/i });
     await expect(link).toBeVisible();
+    consoleErrors.assertNoErrors();
   });
 
-  test("sign up link should be accessible by role", async ({ page }) => {
+  test("sign up link should be accessible by role", async ({ page, consoleErrors }) => {
     const link = page.getByRole("link", { name: /sign up/i });
     await expect(link).toBeVisible();
+    consoleErrors.assertNoErrors();
   });
 
   test("login form should display error messages with error semantics", async ({
     loginPage,
+    consoleErrors,
   }) => {
     // Submit with invalid credentials to trigger an error
     await loginPage.loginWithInvalidCredentials();
@@ -340,6 +390,7 @@ test.describe("Login Accessibility @auth @a11y", () => {
     // Even without explicit ARIA, visible error text is acceptable
     const errorText = await loginPage.getErrorMessageText();
     expect(hasAria || errorText.length > 0).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -347,6 +398,7 @@ test.describe("Login Error Handling @auth @errors", () => {
   test("rapid double-click on submit should not cause multiple submissions", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.goto();
     await loginPage.fillEmail("user@test.com");
@@ -373,27 +425,33 @@ test.describe("Login Error Handling @auth @errors", () => {
     // Most apps should debounce or disable the button after first click
     // Allow up to 2 calls (some apps may not debounce perfectly)
     expect(authCallCount).toBeLessThanOrEqual(2);
+    consoleErrors.assertNoErrors();
   });
 
   test("should display error message for invalid credentials", async ({
     loginPage,
+    consoleErrors,
   }) => {
     await loginPage.loginWithInvalidCredentials();
     const errorText = await loginPage.getErrorMessageText();
     expect(errorText.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
   test("should stay on login page after failed attempt", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.loginWithInvalidCredentials();
     expect(page.url()).toContain("sign-in");
+    consoleErrors.assertNoErrors();
   });
 
   test("should allow retry after failed login attempt", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // First attempt fails
     await loginPage.loginWithInvalidCredentials();
@@ -404,11 +462,13 @@ test.describe("Login Error Handling @auth @errors", () => {
     const passwordVisible = await loginPage.isPasswordInputVisible();
     expect(emailVisible).toBe(true);
     expect(passwordVisible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("should clear password field visibility state on page reload", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.goto();
     await loginPage.fillPassword("testpassword");
@@ -426,6 +486,7 @@ test.describe("Login Error Handling @auth @errors", () => {
       type = await loginPage.getPasswordInputType();
       expect(type).toBe("password");
     }
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -433,6 +494,7 @@ test.describe("Login Session & State @auth @session", () => {
   test("authenticated user visiting /sign-in should retain their session", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.admin.username,
@@ -451,11 +513,13 @@ test.describe("Login Session & State @auth @session", () => {
     await loginPage.goto();
     const stillHasToken = await loginPage.hasAuthTokenStored();
     expect(stillHasToken).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("successful login should store auth token", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.admin.username,
@@ -468,11 +532,13 @@ test.describe("Login Session & State @auth @session", () => {
 
     const hasToken = await loginPage.hasAuthTokenStored();
     expect(hasToken).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("logout should clear auth token and redirect to sign-in", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.admin.username,
@@ -492,6 +558,7 @@ test.describe("Login Session & State @auth @session", () => {
     // Navigate to sign-in
     await loginPage.goto();
     expect(page.url()).toContain("sign-in");
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -502,30 +569,37 @@ test.describe("Google Sign-In @auth @google", () => {
 
   // ── UI Tests (no credentials needed) ──────────────────────────────────
 
-  test("Google Sign-In button should be visible", async ({ loginPage }) => {
+  test("Google Sign-In button should be visible", async ({ loginPage, consoleErrors }) => {
     const visible = await loginPage.isGoogleSignInVisible();
     expect(visible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("Google Sign-In button should have correct text", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const text = await loginPage.getGoogleSignInText();
     expect(text.toLowerCase()).toContain("google");
+    consoleErrors.assertNoErrors();
   });
 
   test("Google Sign-In button should be accessible by role", async ({
     page,
+    consoleErrors,
   }) => {
     const button = page.getByRole("button", { name: /sign in with google/i });
     await expect(button).toBeVisible();
+    consoleErrors.assertNoErrors();
   });
 
   test("Google Sign-In button should be enabled and clickable", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const enabled = await loginPage.isGoogleSignInEnabled();
     expect(enabled).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   // ── Popup Behavior Tests (no credentials needed) ─────────────────────
@@ -533,6 +607,7 @@ test.describe("Google Sign-In @auth @google", () => {
   test("clicking Google Sign-In should open a popup or redirect to Google", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Track whether a popup opened or the page redirected
     let popupOpened = false;
@@ -559,11 +634,13 @@ test.describe("Google Sign-In @auth @google", () => {
     }
 
     expect(popupOpened || redirected).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("Google popup should display an email input field", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     try {
       const [popup] = await Promise.all([
@@ -589,11 +666,13 @@ test.describe("Google Sign-In @auth @google", () => {
         expect(true).toBe(false);
       }
     }
+    consoleErrors.assertNoErrors();
   });
 
   test("closing popup without completing should return to sign-in page", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     try {
       const [popup] = await Promise.all([
@@ -611,6 +690,7 @@ test.describe("Google Sign-In @auth @google", () => {
     // Should still be on the sign-in page
     await page.waitForTimeout(2000);
     expect(page.url()).toContain("sign-in");
+    consoleErrors.assertNoErrors();
   });
 
   // ── Authenticated Flow Tests (require GOOGLE_EMAIL/PASSWORD) ─────────
@@ -618,6 +698,7 @@ test.describe("Google Sign-In @auth @google", () => {
   test("should authenticate successfully with valid Google account", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.google.email,
@@ -640,11 +721,13 @@ test.describe("Google Sign-In @auth @google", () => {
 
     // Should no longer be on the sign-in page
     await expect(page).not.toHaveURL(/sign-in|login/, { timeout: 15000 });
+    consoleErrors.assertNoErrors();
   });
 
   test("successful Google login should store auth token", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.google.email,
@@ -665,12 +748,14 @@ test.describe("Google Sign-In @auth @google", () => {
     // Auth token should be stored
     const hasToken = await loginPage.hasAuthTokenStored();
     expect(hasToken).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("Google login should load the dashboard", async ({
     loginPage,
     page,
     dashboardPage,
+    consoleErrors,
   }) => {
     test.skip(
       !envConfig.credentials.google.email,
@@ -691,6 +776,7 @@ test.describe("Google Sign-In @auth @google", () => {
     // Dashboard should load
     const loaded = await dashboardPage.isLoaded();
     expect(loaded).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 });
 
@@ -701,20 +787,24 @@ test.describe("Language Selector @auth @i18n", () => {
 
   // ── Visibility & Accessibility ────────────────────────────────────────
 
-  test("language selector should be visible", async ({ loginPage }) => {
+  test("language selector should be visible", async ({ loginPage, consoleErrors }) => {
     const visible = await loginPage.isLanguageSelectorVisible();
     expect(visible).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("language selector should show current language", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const current = await loginPage.getCurrentLanguage();
     expect(current.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
   test("language selector should be accessible by combobox role", async ({
     page,
+    consoleErrors,
   }) => {
     const combobox = page.getByRole("combobox");
     // If combobox role is used, it should be visible; otherwise check CSS selector
@@ -730,21 +820,25 @@ test.describe("Language Selector @auth @i18n", () => {
     } else {
       await expect(combobox.first()).toBeVisible();
     }
+    consoleErrors.assertNoErrors();
   });
 
   // ── Dropdown Behavior ──────────────────────────────────────────────────
 
   test("opening language selector should display available languages", async ({
     loginPage,
+    consoleErrors,
   }) => {
     await loginPage.openLanguageSelector();
     const languages = await loginPage.getAvailableLanguages();
     // Should have at least 2 languages to switch between
     expect(languages.length).toBeGreaterThanOrEqual(2);
+    consoleErrors.assertNoErrors();
   });
 
   test("available languages should include the current language", async ({
     loginPage,
+    consoleErrors,
   }) => {
     const current = await loginPage.getCurrentLanguage();
     await loginPage.openLanguageSelector();
@@ -756,6 +850,7 @@ test.describe("Language Selector @auth @i18n", () => {
         current.toLowerCase().includes(lang.toLowerCase())
     );
     expect(match).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   // ── Translation Verification ──────────────────────────────────────────
@@ -763,6 +858,7 @@ test.describe("Language Selector @auth @i18n", () => {
   test("switching language should change page text content", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Snapshot the page in the default language
     const before = await loginPage.getPageTranslationSnapshot();
@@ -781,6 +877,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test translation");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -798,11 +895,13 @@ test.describe("Language Selector @auth @i18n", () => {
     );
 
     expect(changedFields.length).toBeGreaterThan(0);
+    consoleErrors.assertNoErrors();
   });
 
   test("switching to another language should update the submit button text", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     const before = await loginPage.getPageTranslationSnapshot();
     const submitBefore = before["submitButton"];
@@ -819,6 +918,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test translation");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -832,11 +932,13 @@ test.describe("Language Selector @auth @i18n", () => {
     if (submitBefore && submitAfter) {
       expect(submitAfter).not.toBe(submitBefore);
     }
+    consoleErrors.assertNoErrors();
   });
 
   test("switching language should update form field labels", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     const before = await loginPage.getPageTranslationSnapshot();
 
@@ -852,6 +954,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test translation");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -871,11 +974,13 @@ test.describe("Language Selector @auth @i18n", () => {
       before["passwordLabel"] !== after["passwordLabel"];
 
     expect(emailChanged || passwordChanged).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("switching to another language and back should restore original text", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     // Snapshot default language
     const original = await loginPage.getPageTranslationSnapshot();
@@ -892,6 +997,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test translation");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -912,11 +1018,13 @@ test.describe("Language Selector @auth @i18n", () => {
         expect(restored[key]).toBe(original[key]);
       }
     }
+    consoleErrors.assertNoErrors();
   });
 
   test("language selection should persist after page reload", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     const defaultLang = await loginPage.getCurrentLanguage();
 
@@ -931,6 +1039,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test persistence");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -947,6 +1056,7 @@ test.describe("Language Selector @auth @i18n", () => {
     // Language should still be the switched one
     const afterReload = await loginPage.getCurrentLanguage();
     expect(afterReload.toLowerCase()).toContain(afterSwitch.toLowerCase());
+    consoleErrors.assertNoErrors();
   });
 
   // ── Edge Cases ─────────────────────────────────────────────────────────
@@ -954,6 +1064,7 @@ test.describe("Language Selector @auth @i18n", () => {
   test("all page elements should remain visible after language switch", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.openLanguageSelector();
     const languages = await loginPage.getAvailableLanguages();
@@ -967,6 +1078,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test layout");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -980,11 +1092,13 @@ test.describe("Language Selector @auth @i18n", () => {
     expect(await loginPage.isForgotPasswordLinkVisible()).toBe(true);
     expect(await loginPage.isSignUpLinkVisible()).toBe(true);
     expect(await loginPage.isGoogleSignInVisible()).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 
   test("login form should still function after language switch", async ({
     loginPage,
     page,
+    consoleErrors,
   }) => {
     await loginPage.openLanguageSelector();
     const languages = await loginPage.getAvailableLanguages();
@@ -998,6 +1112,7 @@ test.describe("Language Selector @auth @i18n", () => {
 
     if (!otherLang) {
       test.skip(true, "Only one language available — cannot test form");
+      consoleErrors.assertNoErrors();
       return;
     }
 
@@ -1013,5 +1128,6 @@ test.describe("Language Selector @auth @i18n", () => {
     await loginPage.fillPassword("password123");
     const enabledAfter = await loginPage.isSubmitButtonEnabled();
     expect(enabledAfter).toBe(true);
+    consoleErrors.assertNoErrors();
   });
 });
