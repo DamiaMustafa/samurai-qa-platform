@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage } from "../pages";
 import { type PageFixtures } from "./base-fixture";
 import { takeResultScreenshot } from "./screenshot-helper";
 
@@ -14,6 +14,7 @@ type AuthFixtures = PageFixtures & {
     loginPage: LoginPage;
     dashboardPage: DashboardPage;
     navigationPage: NavigationPage;
+    homePage: HomePage;
   };
 };
 
@@ -30,16 +31,20 @@ export const authTest = base.extend<AuthFixtures>({
     await use(new NavigationPage(page));
   },
 
+  homePage: async ({ page }, use) => {
+    await use(new HomePage(page));
+  },
+
   // Auto-fixture: takes a screenshot after every test with readable naming
   page: async ({ page }, use, testInfo) => {
     await use(page);
     await takeResultScreenshot(page, testInfo);
   },
 
-  authenticatedPage: async ({ page, loginPage, dashboardPage, navigationPage }, use) => {
+  authenticatedPage: async ({ page, loginPage, dashboardPage, navigationPage, homePage }, use) => {
     // Login before providing the fixture
     await loginPage.loginAs("admin");
-    await use({ loginPage, dashboardPage, navigationPage });
+    await use({ loginPage, dashboardPage, navigationPage, homePage });
   },
 });
 

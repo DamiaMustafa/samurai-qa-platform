@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 
 /**
@@ -10,6 +10,7 @@ export type PageFixtures = {
   loginPage: LoginPage;
   dashboardPage: DashboardPage;
   navigationPage: NavigationPage;
+  homePage: HomePage;
 };
 
 export const test = base.extend<PageFixtures>({
@@ -23,6 +24,10 @@ export const test = base.extend<PageFixtures>({
 
   navigationPage: async ({ page }, use) => {
     await use(new NavigationPage(page));
+  },
+
+  homePage: async ({ page }, use) => {
+    await use(new HomePage(page));
   },
 
   // Auto-fixture: takes a screenshot after every test with readable naming
