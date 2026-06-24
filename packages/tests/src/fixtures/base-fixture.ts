@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -12,6 +12,14 @@ export type PageFixtures = {
   dashboardPage: DashboardPage;
   navigationPage: NavigationPage;
   homePage: HomePage;
+  projectsPage: ProjectsPage;
+  apiKeysPage: ApiKeysPage;
+  instantDistillPage: InstantDistillPage;
+  edgeManagementPage: EdgeManagementPage;
+  workflowListingPage: WorkflowListingPage;
+  userManagementPage: UserManagementPage;
+  planPage: PlanPage;
+  projectCreationPage: ProjectCreationPage;
   consoleErrors: ReturnType<typeof listenForConsoleErrors>;
 };
 
@@ -30,6 +38,38 @@ export const test = base.extend<PageFixtures>({
 
   homePage: async ({ page }, use) => {
     await use(new HomePage(page));
+  },
+
+  projectsPage: async ({ page }, use) => {
+    await use(new ProjectsPage(page));
+  },
+
+  apiKeysPage: async ({ page }, use) => {
+    await use(new ApiKeysPage(page));
+  },
+
+  instantDistillPage: async ({ page }, use) => {
+    await use(new InstantDistillPage(page));
+  },
+
+  edgeManagementPage: async ({ page }, use) => {
+    await use(new EdgeManagementPage(page));
+  },
+
+  workflowListingPage: async ({ page }, use) => {
+    await use(new WorkflowListingPage(page));
+  },
+
+  userManagementPage: async ({ page }, use) => {
+    await use(new UserManagementPage(page));
+  },
+
+  planPage: async ({ page }, use) => {
+    await use(new PlanPage(page));
+  },
+
+  projectCreationPage: async ({ page }, use) => {
+    await use(new ProjectCreationPage(page));
   },
 
   consoleErrors: async ({ page }, use) => {
