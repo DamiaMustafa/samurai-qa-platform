@@ -142,12 +142,12 @@ export class UserManagementPage extends BasePage {
   // ── Members Table ───────────────────────────────────────────────────────
 
   async getMembersRowCount(): Promise<number> {
-    // Count only tbody rows to exclude the header, or use specific data wrapper classes
+    // Try tbody first (sc-table pattern), then fall back to counting data rows (rows with td cells)
     const tbodyRows = this.page.locator('table tbody tr');
-    const count = await tbodyRows.count();
-    if (count > 0) return count;
-    // Fallback: count individual data row elements
-    return this.page.locator('.users__listing-data [class*="row"], .users__listing-data-wrapper [class*="member"]').count();
+    const tbodyCount = await tbodyRows.count();
+    if (tbodyCount > 0) return tbodyCount;
+    // Plain table without thead/tbody — count rows that have td cells (excludes header rows with th)
+    return this.page.locator('table tr:has(td)').count();
   }
 
   // ── Add User ────────────────────────────────────────────────────────────
