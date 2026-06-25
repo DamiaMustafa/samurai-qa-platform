@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage, AdvanceTrainingFormPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -35,6 +35,7 @@ export type PageFixtures = {
   labelingModeSelectionPage: LabelingModeSelectionPage;
   labelingTaskCreationPage: LabelingTaskCreationPage;
   fastTrainingFormPage: FastTrainingFormPage;
+  advanceTrainingFormPage: AdvanceTrainingFormPage;
   consoleErrors: ReturnType<typeof listenForConsoleErrors>;
 };
 
@@ -145,6 +146,10 @@ export const test = base.extend<PageFixtures>({
 
   fastTrainingFormPage: async ({ page }, use) => {
     await use(new FastTrainingFormPage(page));
+  },
+
+  advanceTrainingFormPage: async ({ page }, use) => {
+    await use(new AdvanceTrainingFormPage(page));
   },
 
   consoleErrors: async ({ page }, use) => {

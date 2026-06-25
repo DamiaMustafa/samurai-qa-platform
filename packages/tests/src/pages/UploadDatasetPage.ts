@@ -73,6 +73,38 @@ export class UploadDatasetPage extends BasePage {
     await this.selectDropdownOption(this.datasetTypeDropdown, type);
   }
 
+  /**
+   * Check whether a specific option exists in the dataset type dropdown.
+   * Opens the dropdown, checks for the option, then closes it.
+   */
+  async isDatasetTypeOptionAvailable(
+    optionValue: "labelled" | "unlabelled" | "video"
+  ): Promise<boolean> {
+    const select = this.page
+      .locator(
+        `${this.datasetTypeDropdown} .mat-mdc-select, ${this.datasetTypeDropdown} mat-select`
+      )
+      .first();
+    await select.click();
+
+    const panel = this.page
+      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
+      .first();
+    await panel.waitFor({ state: "visible", timeout: 5_000 });
+
+    const option = panel
+      .locator(".mat-mdc-option")
+      .filter({ hasText: new RegExp(optionValue, "i") })
+      .first();
+    const available = await option.isVisible().catch(() => false);
+
+    // Close dropdown by clicking outside
+    await this.page.keyboard.press("Escape");
+    await this.page.waitForTimeout(300);
+
+    return available;
+  }
+
   // ── Label Format (labelled mode only) ───────────────────────────────────
 
   async selectLabelFormat(format: "yolo" | "coco"): Promise<void> {
@@ -92,6 +124,22 @@ export class UploadDatasetPage extends BasePage {
       .locator(this.labelFormatRadio)
       .first()
       .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+  }
+
+  /**
+   * Check whether a specific label format radio option exists.
+   * Does NOT require selecting "labelled" first — checks the radio items
+   * configured at component init.
+   */
+  async isLabelFormatOptionVisible(format: "yolo" | "coco"): Promise<boolean> {
+    const radioGroup = this.page.locator(this.labelFormatRadio);
+    const label = format.toUpperCase();
+    return radioGroup
+      .locator(`.mat-mdc-radio-button`)
+      .filter({ hasText: new RegExp(`^${label}$`, "i") })
+      .first()
+      .isVisible({ timeout: 3_000 })
       .catch(() => false);
   }
 

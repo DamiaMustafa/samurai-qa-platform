@@ -26,3 +26,4 @@ export { UploadDatasetPage } from "./UploadDatasetPage";
 export { LabelingModeSelectionPage } from "./LabelingModeSelectionPage";
 export { LabelingTaskCreationPage } from "./LabelingTaskCreationPage";
 export { FastTrainingFormPage } from "./FastTrainingFormPage";
+export { AdvanceTrainingFormPage } from "./AdvanceTrainingFormPage";

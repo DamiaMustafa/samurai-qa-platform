@@ -157,6 +157,42 @@ export class ProjectCreationPage extends BasePage {
     return cls !== null && cls.includes("mat-mdc-radio-checked");
   }
 
+  // ── Classification Type (V2 + Classification only) ─────────────────────
+  //
+  // NOTE: The frontend template reuses id="project-creation-platform-version-radio"
+  // for both the platform version and classification type radio groups.
+  // When both are visible, nth(0) = platform version, nth(1) = classification type.
+
+  async isClassificationTypeVisible(): Promise<boolean> {
+    return this.page
+      .locator(this.platformVersionRadio)
+      .nth(1)
+      .isVisible({ timeout: 3_000 })
+      .catch(() => false);
+  }
+
+  async selectClassificationType(type: "multi-label" | "single-label"): Promise<void> {
+    const radioGroup = this.page.locator(this.platformVersionRadio).nth(1);
+    const label = type === "multi-label" ? /multi/i : /single/i;
+    await radioGroup
+      .locator(`.mat-mdc-radio-button`)
+      .filter({ hasText: label })
+      .first()
+      .click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async isClassificationTypeSelected(type: "multi-label" | "single-label"): Promise<boolean> {
+    const radioGroup = this.page.locator(this.platformVersionRadio).nth(1);
+    const label = type === "multi-label" ? /multi/i : /single/i;
+    const button = radioGroup
+      .locator(`.mat-mdc-radio-button`)
+      .filter({ hasText: label })
+      .first();
+    const cls = await button.getAttribute("class").catch(() => "");
+    return cls !== null && cls.includes("mat-mdc-radio-checked");
+  }
+
   // ── Submit ──────────────────────────────────────────────────────────────
 
   async isSubmitButtonVisible(): Promise<boolean> {
