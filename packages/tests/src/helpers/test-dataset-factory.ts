@@ -40,7 +40,7 @@ function crc32(buf: Buffer): number {
  * Create a minimal valid 1×1 white PNG image (~68 bytes).
  * Used as a placeholder in test dataset ZIPs.
  */
-function createTinyPng(): Buffer {
+export function createTinyPng(): Buffer {
   // IHDR: 1×1, 8-bit RGB
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(1, 0);  // width

@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage, AdvanceTrainingFormPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, InstantDistillListPage, InstantDistillCreatePage, InstantDistillBuildPage, InstantDistillIntegratePage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage, AdvanceTrainingFormPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -15,6 +15,10 @@ export type PageFixtures = {
   projectsPage: ProjectsPage;
   apiKeysPage: ApiKeysPage;
   instantDistillPage: InstantDistillPage;
+  instantDistillListPage: InstantDistillListPage;
+  instantDistillCreatePage: InstantDistillCreatePage;
+  instantDistillBuildPage: InstantDistillBuildPage;
+  instantDistillIntegratePage: InstantDistillIntegratePage;
   edgeManagementPage: EdgeManagementPage;
   workflowListingPage: WorkflowListingPage;
   userManagementPage: UserManagementPage;
@@ -66,6 +70,22 @@ export const test = base.extend<PageFixtures>({
 
   instantDistillPage: async ({ page }, use) => {
     await use(new InstantDistillPage(page));
+  },
+
+  instantDistillListPage: async ({ page }, use) => {
+    await use(new InstantDistillListPage(page));
+  },
+
+  instantDistillCreatePage: async ({ page }, use) => {
+    await use(new InstantDistillCreatePage(page));
+  },
+
+  instantDistillBuildPage: async ({ page }, use) => {
+    await use(new InstantDistillBuildPage(page));
+  },
+
+  instantDistillIntegratePage: async ({ page }, use) => {
+    await use(new InstantDistillIntegratePage(page));
   },
 
   edgeManagementPage: async ({ page }, use) => {
