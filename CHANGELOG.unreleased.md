@@ -31,3 +31,15 @@
   third-party iframes (Google/YouTube)
 
 Results: 206 passed, 0 failed, 90 skipped (2026-06-25, 608c987)
+- **feat:** add negative/validation tests (15 tests) - 340 total
+
+Group 6 of 6 project creation test groups covering error paths:
+- Form validation: empty name, re-disable on clear
+- API errors: billing expired, project limit exceeded (mocked GraphQL)
+- Dataset structure: invalid ZIP/YOLO/COCO via malformed JSZip buffers
+- Video & files: >180s video, insufficient storage, empty upload, .pdf rejection
+- Training: duplicate model name, patience >= epochs validation
+- Sharing: public project payload, labeler/reviewer assignment
+
+Tags: @negative @project-creation @form-validation @api-errors
+      @dataset-validation @file-validation @training-validation @sharing (2026-06-26, f3e40e8)
