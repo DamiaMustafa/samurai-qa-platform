@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@samurai-qa/shared": "*"
+    "@samurai-qa/shared": "*",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

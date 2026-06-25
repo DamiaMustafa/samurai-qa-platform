@@ -135,6 +135,28 @@ export class ProjectCreationPage extends BasePage {
     return this.page.locator(this.platformVersionRadio).first().isVisible({ timeout: 5000 }).catch(() => false);
   }
 
+  async selectVersion(version: "v1" | "v2"): Promise<void> {
+    const radioGroup = this.page.locator(this.platformVersionRadio);
+    const label = version.toUpperCase();
+    await radioGroup
+      .locator(`.mat-mdc-radio-button`)
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .first()
+      .click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async isVersionSelected(version: "v1" | "v2"): Promise<boolean> {
+    const radioGroup = this.page.locator(this.platformVersionRadio);
+    const label = version.toUpperCase();
+    const button = radioGroup
+      .locator(`.mat-mdc-radio-button`)
+      .filter({ hasText: new RegExp(`^${label}$`) })
+      .first();
+    const cls = await button.getAttribute("class").catch(() => "");
+    return cls !== null && cls.includes("mat-mdc-radio-checked");
+  }
+
   // ── Submit ──────────────────────────────────────────────────────────────
 
   async isSubmitButtonVisible(): Promise<boolean> {
@@ -157,5 +179,26 @@ export class ProjectCreationPage extends BasePage {
 
   async clickSuccessSkip(): Promise<void> {
     await this.page.locator(this.successSkip).first().click();
+  }
+
+  /**
+   * Click "Upload Dataset Now" in the success dialog.
+   * The dialog button has id="project-creation-success-upload-dataset"
+   * and navigates to /dataset/{id}/add.
+   */
+  async clickUploadDatasetNow(): Promise<void> {
+    await this.page.locator(this.successDialog).first().waitFor({ state: "visible", timeout: 10_000 });
+    await this.page.locator("#project-creation-success-upload-dataset").first().click();
+  }
+
+  /**
+   * Check whether the success dialog's upload button is present.
+   */
+  async isUploadDatasetButtonVisible(): Promise<boolean> {
+    return this.page
+      .locator("#project-creation-success-upload-dataset")
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
   }
 }

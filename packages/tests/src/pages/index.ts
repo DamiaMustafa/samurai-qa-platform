@@ -22,3 +22,7 @@ export { TrainPage } from "./TrainPage";
 export { DeployPage } from "./DeployPage";
 export { DatasetOverviewPage } from "./DatasetOverviewPage";
 export { LabelingTasksListPage } from "./LabelingTasksListPage";
+export { UploadDatasetPage } from "./UploadDatasetPage";
+export { LabelingModeSelectionPage } from "./LabelingModeSelectionPage";
+export { LabelingTaskCreationPage } from "./LabelingTaskCreationPage";
+export { FastTrainingFormPage } from "./FastTrainingFormPage";

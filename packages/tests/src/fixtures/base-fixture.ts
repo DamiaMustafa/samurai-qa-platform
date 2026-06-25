@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -31,6 +31,10 @@ export type PageFixtures = {
   deployPage: DeployPage;
   datasetOverviewPage: DatasetOverviewPage;
   labelingTasksListPage: LabelingTasksListPage;
+  uploadDatasetPage: UploadDatasetPage;
+  labelingModeSelectionPage: LabelingModeSelectionPage;
+  labelingTaskCreationPage: LabelingTaskCreationPage;
+  fastTrainingFormPage: FastTrainingFormPage;
   consoleErrors: ReturnType<typeof listenForConsoleErrors>;
 };
 
@@ -125,6 +129,22 @@ export const test = base.extend<PageFixtures>({
 
   labelingTasksListPage: async ({ page }, use) => {
     await use(new LabelingTasksListPage(page));
+  },
+
+  uploadDatasetPage: async ({ page }, use) => {
+    await use(new UploadDatasetPage(page));
+  },
+
+  labelingModeSelectionPage: async ({ page }, use) => {
+    await use(new LabelingModeSelectionPage(page));
+  },
+
+  labelingTaskCreationPage: async ({ page }, use) => {
+    await use(new LabelingTaskCreationPage(page));
+  },
+
+  fastTrainingFormPage: async ({ page }, use) => {
+    await use(new FastTrainingFormPage(page));
   },
 
   consoleErrors: async ({ page }, use) => {
