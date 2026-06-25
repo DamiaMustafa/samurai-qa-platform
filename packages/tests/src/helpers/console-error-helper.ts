@@ -33,6 +33,7 @@ export function listenForConsoleErrors(page: Page): ConsoleCapture {
         text.includes("ERR_NAME_NOT_RESOLVED") ||
         text.includes("ERR_CONNECTION_REFUSED") ||
         text.includes("Cannot read properties of undefined") ||
+        text.includes("report-only") ||  // CSP report-only from third-party iframes (Google/YouTube)
         text.includes("chunk-");  // Angular minified runtime errors
       if (!isNoise) {
         errors.push(text);

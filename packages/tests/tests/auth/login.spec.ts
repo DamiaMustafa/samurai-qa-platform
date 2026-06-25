@@ -656,11 +656,17 @@ test.describe("Google Sign-In @auth @google", () => {
       // Clean up
       await popup.close().catch(() => {});
     } catch {
-      // If popup didn't open (redirect flow), check the main page
+      // If popup didn't open (redirect flow), wait for the redirect chain
+      // to complete (Cognito → Google) and check the main page
+      await page.waitForLoadState("domcontentloaded", { timeout: 15000 }).catch(() => {});
+      // Give the redirect chain time to settle
+      await page.waitForTimeout(3000);
       const currentUrl = page.url();
       if (currentUrl.includes("accounts.google.com")) {
-        const emailInput = page.locator('input[type="email"]').first();
-        await expect(emailInput).toBeVisible({ timeout: 10000 });
+        // Google's login form uses a textbox with accessible name "Email or phone"
+        // rather than input[type="email"]
+        const emailInput = page.getByRole("textbox", { name: /email/i }).first();
+        await expect(emailInput).toBeVisible({ timeout: 20000 });
       } else {
         // Neither popup nor redirect worked — fail the test
         expect(true).toBe(false);
@@ -674,17 +680,28 @@ test.describe("Google Sign-In @auth @google", () => {
     page,
     consoleErrors,
   }) => {
+    let popupOpened = false;
+
     try {
       const [popup] = await Promise.all([
         page.context().waitForEvent("page", { timeout: 10000 }),
         loginPage.clickGoogleSignIn(),
       ]);
       await popup.waitForLoadState("domcontentloaded", { timeout: 10000 });
+      popupOpened = true;
 
       // Close the popup without completing the OAuth flow
       await popup.close();
     } catch {
-      // Popup didn't open — skip this test scenario
+      // Popup didn't open — redirect flow was used instead
+    }
+
+    if (!popupOpened) {
+      // Redirect-based OAuth flow navigates the main page away;
+      // there's no popup to close, so this scenario doesn't apply
+      test.skip(true, "Popup-based flow not used — redirect flow detected");
+      consoleErrors.assertNoErrors();
+      return;
     }
 
     // Should still be on the sign-in page

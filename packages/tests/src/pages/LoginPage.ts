@@ -328,9 +328,9 @@ export class LoginPage extends BasePage {
    * Returns all available language options from the dropdown.
    */
   async getAvailableLanguages(): Promise<string[]> {
-    // Try listbox options first (Material / ARIA pattern)
+    // Try Material v15+ options and ARIA listbox options first
     const listboxOptions = this.page.locator(
-      '[role="listbox"] [role="option"], mat-option, .language-option, .lang-option'
+      '.mat-mdc-option, [role="listbox"] [role="option"], mat-option, .language-option, .lang-option'
     );
     const count = await listboxOptions.count();
     if (count > 0) {
@@ -344,7 +344,7 @@ export class LoginPage extends BasePage {
 
     // Fallback: look for dropdown items that appeared after opening
     const dropdownItems = this.page.locator(
-      '.mat-select-panel li, .cdk-overlay-pane li, [class*="dropdown"] li, select option'
+      '.mat-mdc-select-panel .mat-mdc-option, .mat-select-panel li, .cdk-overlay-pane li, .cdk-overlay-pane .mat-mdc-option, [class*="dropdown"] li, select option'
     );
     const itemCount = await dropdownItems.count();
     const texts: string[] = [];
@@ -360,33 +360,42 @@ export class LoginPage extends BasePage {
    */
   async selectLanguage(language: string): Promise<void> {
     await this.openLanguageSelector();
-    // Wait for options to appear
-    await this.page.waitForTimeout(500);
 
-    // Try listbox option first
+    // Wait for the CDK overlay panel to render options — use a real
+    // waitForSelector instead of a fixed timeout so we proceed as soon
+    // as the option is available.
+    const optionSelector =
+      '.mat-mdc-option, [role="listbox"] [role="option"], mat-option';
+    await this.page
+      .locator(optionSelector)
+      .first()
+      .waitFor({ state: "attached", timeout: 5000 })
+      .catch(() => {});
+
+    // Try Material v15+ options and ARIA listbox options first
     const option = this.page
-      .locator(
-        '[role="listbox"] [role="option"], mat-option, .language-option, .lang-option'
-      )
+      .locator(optionSelector)
       .filter({ hasText: new RegExp(language, "i") })
       .first();
 
     if (await option.isVisible().catch(() => false)) {
-      await option.click();
+      // Use force:true because Angular CDK overlay options can be
+      // detached/re-rendered during actionability checks.
+      await option.click({ force: true });
       await this.waitForReady();
       return;
     }
 
-    // Fallback: dropdown items
+    // Fallback: dropdown items in CDK overlay or select panel
     const dropdownItem = this.page
       .locator(
-        '.mat-select-panel li, .cdk-overlay-pane li, [class*="dropdown"] li, select option'
+        '.mat-mdc-select-panel .mat-mdc-option, .mat-select-panel li, .cdk-overlay-pane li, .cdk-overlay-pane .mat-mdc-option, [class*="dropdown"] li, select option'
       )
       .filter({ hasText: new RegExp(language, "i") })
       .first();
 
     if (await dropdownItem.isVisible().catch(() => false)) {
-      await dropdownItem.click();
+      await dropdownItem.click({ force: true });
       await this.waitForReady();
       return;
     }
