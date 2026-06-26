@@ -43,3 +43,4 @@ Group 6 of 6 project creation test groups covering error paths:
 
 Tags: @negative @project-creation @form-validation @api-errors
       @dataset-validation @file-validation @training-validation @sharing (2026-06-26, f3e40e8)
+- **feat:** instant distill build (21) + integrate (9) tests - 54 total (2026-06-26, db14141)
