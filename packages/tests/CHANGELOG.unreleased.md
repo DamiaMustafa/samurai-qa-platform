@@ -17,3 +17,5 @@
 - **feat:** instant distill build (21) + integrate (9) tests - 54 total (2026-06-26, db14141)
 - **feat:** add Plan page tests (27 tests) (2026-06-26, 243471e)
 - **feat:** add Plan page tests (27 tests) (2026-06-26, 243471e)
+- **feat:** add Edge Management tests (38 tests) (2026-06-26, 4983cba)
+- **feat:** add Edge Management tests (38 tests) (2026-06-26, 4983cba)

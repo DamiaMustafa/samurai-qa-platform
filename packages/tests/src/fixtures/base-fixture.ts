@@ -1,5 +1,5 @@
 import { test as base } from "@playwright/test";
-import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, InstantDistillListPage, InstantDistillCreatePage, InstantDistillBuildPage, InstantDistillIntegratePage, EdgeManagementPage, WorkflowListingPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage, AdvanceTrainingFormPage } from "../pages";
+import { LoginPage, DashboardPage, NavigationPage, HomePage, ProjectsPage, ApiKeysPage, InstantDistillPage, InstantDistillListPage, InstantDistillCreatePage, InstantDistillBuildPage, InstantDistillIntegratePage, EdgeManagementPage, WorkflowListingPage, WorkflowCanvasPage, UserManagementPage, PlanPage, ProjectCreationPage, SignUpPage, ForgotPasswordPage, ChangePasswordPage, ProjectOverviewPage, ProjectDatasetPage, ManageLabelsPage, ManageTagsPage, TrainPage, DeployPage, DatasetOverviewPage, LabelingTasksListPage, UploadDatasetPage, LabelingModeSelectionPage, LabelingTaskCreationPage, FastTrainingFormPage, AdvanceTrainingFormPage } from "../pages";
 import { takeResultScreenshot } from "./screenshot-helper";
 import { listenForConsoleErrors } from "../helpers/console-error-helper";
 
@@ -21,6 +21,7 @@ export type PageFixtures = {
   instantDistillIntegratePage: InstantDistillIntegratePage;
   edgeManagementPage: EdgeManagementPage;
   workflowListingPage: WorkflowListingPage;
+  workflowCanvasPage: WorkflowCanvasPage;
   userManagementPage: UserManagementPage;
   planPage: PlanPage;
   projectCreationPage: ProjectCreationPage;
@@ -94,6 +95,10 @@ export const test = base.extend<PageFixtures>({
 
   workflowListingPage: async ({ page }, use) => {
     await use(new WorkflowListingPage(page));
+  },
+
+  workflowCanvasPage: async ({ page }, use) => {
+    await use(new WorkflowCanvasPage(page));
   },
 
   userManagementPage: async ({ page }, use) => {

@@ -12,6 +12,7 @@ export { InstantDistillBuildPage } from "./InstantDistillBuildPage";
 export { InstantDistillIntegratePage } from "./InstantDistillIntegratePage";
 export { EdgeManagementPage } from "./EdgeManagementPage";
 export { WorkflowListingPage } from "./WorkflowListingPage";
+export { WorkflowCanvasPage } from "./WorkflowCanvasPage";
 export { UserManagementPage } from "./UserManagementPage";
 export { PlanPage } from "./PlanPage";
 export { ProjectCreationPage } from "./ProjectCreationPage";
