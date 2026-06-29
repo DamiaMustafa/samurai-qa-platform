@@ -172,11 +172,85 @@ test.describe("Project Creation E2E — Smoke @smoke @project-creation-e2e", () 
 
   let createdProjectId: string | undefined;
 
-  test.beforeEach(async ({ loginPage }) => {
+  test.beforeEach(async ({ loginPage, page }) => {
     await loginPage.loginAs("admin");
     const error = await loginPage.getLoginErrorMessage();
     test.skip(!!error, `Login blocked by environment: ${error}`);
     createdProjectId = undefined;
+
+    // Capture project_type/platformVersion from the billing request so the
+    // getProject mock can return the right type for the upload page.
+    let capturedProjectType = "object_detection";
+    let capturedPlatformVersion = "v2";
+    let capturedProjectName = "Mock E2E Project";
+
+    await page.route("**/graphql", async (route) => {
+      const postData = route.request().postData() || "";
+
+      if (postData.includes("createProjectBilling") || postData.includes("CreateProjectBilling")) {
+        try {
+          const body = JSON.parse(postData);
+          const projectInfo = JSON.parse(
+            body?.variables?.input?.projectInfo ?? body?.variables?.projectInfo ?? "{}"
+          );
+          capturedProjectType = projectInfo.project_type || "object_detection";
+          capturedPlatformVersion = projectInfo.platformVersion || "v2";
+          capturedProjectName = projectInfo.name || "Mock E2E Project";
+        } catch {}
+
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: {
+              createProjectBilling: {
+                body: JSON.stringify({
+                  id: "mock-e2e-project",
+                  project_type: capturedProjectType,
+                  platformVersion: capturedPlatformVersion,
+                }),
+                __typename: "ProjectBillingResponse",
+              },
+            },
+          }),
+        });
+        return;
+      }
+
+      // Mock getProject for the fake project ID so upload-v2 can initialize.
+      // Without this, getProject throws (project doesn't exist in backend)
+      // and deactivateLoading() is never called, leaving the page hidden.
+      if (
+        (postData.includes("GetProject") || postData.includes("getProject")) &&
+        postData.includes("mock-e2e-project")
+      ) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            data: {
+              getProject: {
+                __typename: "Project",
+                id: "mock-e2e-project",
+                name: capturedProjectName,
+                description: "",
+                project_type: capturedProjectType,
+                platformVersion: capturedPlatformVersion,
+                public: false,
+                multiLabel: false,
+                owner: "mock-owner",
+                companyId: "mock-company",
+                archived: false,
+                tags: { __typename: "ModelTagConnection", items: [] },
+              },
+            },
+          }),
+        });
+        return;
+      }
+
+      await route.continue();
+    });
   });
 
   test.afterEach(async ({ page }) => {

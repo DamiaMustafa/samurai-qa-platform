@@ -45,8 +45,21 @@ export class InstantDistillIntegratePage extends BasePage {
   // ── Navigation ──────────────────────────────────────────────────────────
 
   async goto(projectId: string): Promise<void> {
-    await this.navigate(`/instant-distill/${projectId}/integrate`);
-    await this.waitForReady();
+    // Use Angular's client-side router so InstantDistillService keeps its
+    // in-memory state. A hard reload (page.goto) would clear the service's
+    // BehaviorSubject and the component would redirect back to the list page.
+    await this.page.evaluate((id: string) => {
+      const listEl = document.querySelector("app-instant-distill-list");
+      const router = (window as any).ng?.getComponent?.(listEl)?._router;
+      if (router?.navigate) {
+        router.navigate([`/instant-distill/${id}/integrate`]);
+      } else {
+        window.history.pushState({}, "", `/instant-distill/${id}/integrate`);
+        window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+      }
+    }, projectId);
+    await this.page.waitForLoadState("networkidle");
+    await this.page.waitForTimeout(2_000);
   }
 
   async isLoaded(): Promise<boolean> {

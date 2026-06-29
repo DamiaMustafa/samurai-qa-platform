@@ -47,7 +47,9 @@ import {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const MOCK_PROJECT_ID = "mock-build-1";
+// Must match the ID from createMockProjects() — the Angular router
+// needs the URL param to match a known project for sub-page navigation.
+const MOCK_PROJECT_ID = "mock-distill-1";
 
 // ─── Block 1: Layout ─────────────────────────────────────────────────────────
 
@@ -66,7 +68,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 
@@ -130,7 +152,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 
@@ -248,7 +290,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 
@@ -332,7 +394,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 
@@ -402,7 +484,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 
@@ -449,7 +551,27 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Build Test"));
-        await instantDistillBuildPage.goto(MOCK_PROJECT_ID);
+
+        // Step 1: Navigate to the list page so the service populates its
+        // in-memory BehaviorSubject with mocked projects via GraphQL.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(3_000);
+
+        // Step 2: Use Angular's router for client-side navigation to the build
+        // page. This preserves the service state (no full page reload).
+        await page.evaluate((id: string) => {
+          // ng.getComponent() works in both dev and prod mode (Angular 9+).
+          const listEl = document.querySelector("app-instant-distill-list");
+          const router = (window as any).ng?.getComponent?.(listEl)?._router;
+          if (router?.navigate) {
+            router.navigate([`/instant-distill/${id}/build`]);
+          } else {
+            window.history.pushState({}, "", `/instant-distill/${id}/build`);
+            window.dispatchEvent(new PopStateEvent("popstate", { state: window.history.state }));
+          }
+        }, MOCK_PROJECT_ID);
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(2_000);
       }
     );
 

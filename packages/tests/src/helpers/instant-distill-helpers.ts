@@ -142,8 +142,9 @@ export async function mockDistillGraphQL(
 ): Promise<void> {
   await page.route("**/graphql", async (route) => {
     const postData = route.request().postData() || "";
+    const lower = postData.toLowerCase();
 
-    if (postData.includes("ListDistillProjectsByCompanyID")) {
+    if (lower.includes("listdistillprojectsbycompanyid")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -152,7 +153,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("GetDistillProject") || postData.includes("getDistillProject")) {
+    if (lower.includes("getdistillproject")) {
       const project = projects[0] || createMockProjects(1)[0];
       await route.fulfill({
         status: 200,
@@ -162,7 +163,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("ListPredictedImagesByDistillProject")) {
+    if (lower.includes("listpredictedimagesbydistillproject")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -171,7 +172,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("ListPredictedVideosByDistillProject")) {
+    if (lower.includes("listpredictedvideosbydistillproject")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -180,7 +181,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("UpdateDistillProject") || postData.includes("updateDistillProject")) {
+    if (lower.includes("updatedistillproject")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -191,7 +192,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("DeleteDistillProject") || postData.includes("deleteDistillProject")) {
+    if (lower.includes("deletedistillproject")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -202,7 +203,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("CreateDistillProject") || postData.includes("createDistillProject")) {
+    if (lower.includes("createdistillproject")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -213,7 +214,7 @@ export async function mockDistillGraphQL(
       return;
     }
 
-    if (postData.includes("ManagePredictedImages") || postData.includes("managePredictedImages")) {
+    if (lower.includes("managepredictedimages")) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",

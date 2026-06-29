@@ -210,7 +210,21 @@ export class ProjectCreationPage extends BasePage {
   // ── Success Dialog ──────────────────────────────────────────────────────
 
   async isSuccessDialogVisible(): Promise<boolean> {
-    return this.page.locator(this.successDialog).first().isVisible({ timeout: 10000 }).catch(() => false);
+    // The dialog container gets id="project-creation-success-dialog" via [attr.id]="dialogContent.dialogId".
+    // Fall back to checking for the known button IDs inside the dialog.
+    const dialogVisible = await this.page
+      .locator(this.successDialog)
+      .first()
+      .isVisible({ timeout: 10_000 })
+      .catch(() => false);
+    if (dialogVisible) return true;
+
+    // Fallback: check if the upload-dataset button (known to be inside the dialog) is visible
+    return this.page
+      .locator("#project-creation-success-upload-dataset")
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
   }
 
   async clickSuccessSkip(): Promise<void> {

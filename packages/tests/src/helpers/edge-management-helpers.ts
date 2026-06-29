@@ -118,7 +118,8 @@ export const MOCK_LATEST_VERSION: MockLatestVersion = {
 function edgeDeviceListResponse(devices: MockEdgeDevice[]) {
   return {
     data: {
-      listEdgeDeviceByCompanyAndCreatedDate: {
+      // Must match the GraphQL query field name: listDevicesByCompanyAndCreatedDate
+      listDevicesByCompanyAndCreatedDate: {
         items: devices.map((d) => ({
           __typename: "EdgeDevice",
           GreengrassGroupName: d.GreengrassGroupName,
@@ -151,7 +152,8 @@ function edgeDeviceListResponse(devices: MockEdgeDevice[]) {
 function edgeDeviceSAResponse(devices: MockEdgeDevice[]) {
   return {
     data: {
-      listEdgeDeviceSAByCreatedDate: {
+      // Must match the GraphQL query field name: listDevicesBySuperAdminAndCreatedDate
+      listDevicesBySuperAdminAndCreatedDate: {
         items: devices.map((d) => ({
           __typename: "EdgeDevice",
           GreengrassGroupName: d.GreengrassGroupName,

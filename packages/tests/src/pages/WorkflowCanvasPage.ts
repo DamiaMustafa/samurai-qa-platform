@@ -65,7 +65,7 @@ import { BasePage } from "./BasePage";
  */
 export class WorkflowCanvasPage extends BasePage {
   // ── Canvas Editor Selectors ────────────────────────────────────────────────
-  private readonly root = "#workflow-page";
+  private readonly root = "#workflow-canvas-container, #workflow-page";
   private readonly main = "#workflow-main";
   private readonly canvas = "#workflow-canvas, workflow-canvas";
   private readonly saveButton = "#workflow-save-button";

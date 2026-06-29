@@ -31,7 +31,9 @@ import {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const MOCK_PROJECT_ID = "mock-integrate-1";
+// Must match the ID from createMockProjects() — the Angular router
+// needs the URL param to match a known project for sub-page navigation.
+const MOCK_PROJECT_ID = "mock-distill-1";
 
 // ─── Block 1: Layout ─────────────────────────────────────────────────────────
 
@@ -50,6 +52,12 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Integrate Test"));
+
+        // Visit the list page first so the service populates its internal
+        // BehaviorSubject with projects from the mocked GraphQL response.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(2_000);
+
         await instantDistillIntegratePage.goto(MOCK_PROJECT_ID);
       }
     );
@@ -101,6 +109,12 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Integrate Test"));
+
+        // Visit the list page first so the service populates its internal
+        // BehaviorSubject with projects from the mocked GraphQL response.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(2_000);
+
         await instantDistillIntegratePage.goto(MOCK_PROJECT_ID);
       }
     );
@@ -149,6 +163,12 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Integrate Test"));
+
+        // Visit the list page first so the service populates its internal
+        // BehaviorSubject with projects from the mocked GraphQL response.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(2_000);
+
         await instantDistillIntegratePage.goto(MOCK_PROJECT_ID);
       }
     );
@@ -192,6 +212,12 @@ test.describe(
         test.skip(!!error, `Login blocked by environment: ${error}`);
 
         await mockDistillGraphQL(page, createMockProjects(1, "Integrate Test"));
+
+        // Visit the list page first so the service populates its internal
+        // BehaviorSubject with projects from the mocked GraphQL response.
+        await page.goto("/instant-distill", { waitUntil: "networkidle" });
+        await page.waitForTimeout(2_000);
+
         await instantDistillIntegratePage.goto(MOCK_PROJECT_ID);
       }
     );

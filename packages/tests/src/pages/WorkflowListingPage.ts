@@ -81,6 +81,10 @@ export class WorkflowListingPage extends BasePage {
   async goto(): Promise<void> {
     await this.navigate("/workflow-listing");
     await this.waitForReady();
+    // Give Angular extra time to settle: the TwLayoutComponent loading
+    // overlay (tw-layout__main-content-invisible) may briefly hide the
+    // content while the translate service resolves initial strings.
+    await this.page.waitForTimeout(2_000);
   }
 
   async isLoaded(): Promise<boolean> {

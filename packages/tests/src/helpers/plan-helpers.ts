@@ -185,31 +185,24 @@ export async function mockCompanyPlanGraphQL(
       return;
     }
 
-    // Extract the JSON input to determine the operation
+    // Extract the JSON input to determine the operation.
+    // AWS Amplify may send input as either a string or an object in variables.
     let input: any = {};
+    let parsed = false;
     try {
       const body = JSON.parse(postData);
-      const inputStr = body?.variables?.input || body?.input;
-      if (inputStr) {
-        input = typeof inputStr === "string" ? JSON.parse(inputStr) : inputStr;
+      const inputRaw = body?.variables?.input ?? body?.input;
+      if (inputRaw) {
+        input = typeof inputRaw === "string" ? JSON.parse(inputRaw) : inputRaw;
+        parsed = true;
       }
     } catch {
-      // If we can't parse, try to match operation names in raw text
-      if (postData.includes('"operation":"QUERY"') || postData.includes('"operation": "QUERY"')) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(companyHandlerListResponse(companies)),
-        });
-        return;
-      }
-      await route.continue();
-      return;
+      // Fall through to raw-text matching below
     }
 
     const operation = input?.operation;
 
-    if (operation === "QUERY") {
+    if (parsed && operation === "QUERY") {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -218,7 +211,7 @@ export async function mockCompanyPlanGraphQL(
       return;
     }
 
-    if (operation === "SEARCH") {
+    if (parsed && operation === "SEARCH") {
       const searchInput = (input?.searchInput || "").toLowerCase();
       const filtered = companies.filter((c) =>
         c.name.toLowerCase().includes(searchInput)
@@ -231,7 +224,7 @@ export async function mockCompanyPlanGraphQL(
       return;
     }
 
-    if (operation === "READ") {
+    if (parsed && operation === "READ") {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -240,7 +233,7 @@ export async function mockCompanyPlanGraphQL(
       return;
     }
 
-    if (operation === "UPDATE") {
+    if (parsed && operation === "UPDATE") {
       const updatedData = input?.updatedData || {};
       await route.fulfill({
         status: 200,
@@ -252,7 +245,37 @@ export async function mockCompanyPlanGraphQL(
       return;
     }
 
-    // Fallback: pass through unmatched operations
-    await route.continue();
+    // Fallback: raw text matching when JSON parsing fails or operation is unknown.
+    // The plan details page sends a READ operation to fetch company data.
+    // If we can't determine the operation, default to READ (plan details)
+    // since that's the most common call during page initialization.
+    if (
+      postData.includes('"operation":"READ"') ||
+      postData.includes('"operation": "READ"') ||
+      postData.includes('"operation":"QUERY"') ||
+      postData.includes('"operation": "QUERY"')
+    ) {
+      const isQuery =
+        postData.includes('"operation":"QUERY"') ||
+        postData.includes('"operation": "QUERY"');
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(
+          isQuery
+            ? companyHandlerListResponse(companies)
+            : companyHandlerReadResponse(detailCompany)
+        ),
+      });
+      return;
+    }
+
+    // Default: treat unknown companyHandler calls as READ for plan details
+    // so the page's @if(!loading) guard resolves and the template renders.
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(companyHandlerReadResponse(detailCompany)),
+    });
   });
 }

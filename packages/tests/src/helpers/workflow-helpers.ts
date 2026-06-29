@@ -389,7 +389,11 @@ export async function mockWorkflowRun(
     ],
   };
 
-  await page.route("**/*workflow*", async (route) => {
+  // Mock the workflow prototype Lambda function URL.
+  // IMPORTANT: Do NOT use **/*workflow* — it catches page navigation URLs
+  // like /workflow-listing and /workflow/:id, returning JSON instead of HTML.
+  // The actual API calls go to AWS Lambda function URLs (*.lambda-url.*).
+  await page.route("**/*.lambda-url.**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
