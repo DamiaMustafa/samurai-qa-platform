@@ -44,3 +44,30 @@ Group 6 of 6 project creation test groups covering error paths:
 Tags: @negative @project-creation @form-validation @api-errors
       @dataset-validation @file-validation @training-validation @sharing (2026-06-26, f3e40e8)
 - **feat:** instant distill build (21) + integrate (9) tests - 54 total (2026-06-26, db14141)
+- **fix:** resolve 22 failing smoke tests across 5 test groups
+
+Root causes and fixes:
+
+Group 1 (edge-list): Fixed GraphQL response field names in
+edge-management-helpers (listDevicesByCompanyAndCreatedDate,
+listDevicesBySuperAdminAndCreatedDate).
+
+Group 2 (workflow-listing): Fixed mockWorkflowRun route pattern
+from **/*workflow* (which intercepted page navigations) to
+**/*.lambda-url.** (only Lambda function URLs). Added 2s settle
+wait in WorkflowListingPage.goto().
+
+Group 3 (instant-distill build/integrate): Replaced ng.getDebugNode()
+(dev-mode only) with ng.getComponent() for Angular router access.
+Changed InstantDistillIntegratePage.goto() to use SPA navigation
+(preserving service BehaviorSubject state) instead of page.goto().
+
+Group 4 (plan-details): Wrapped getCompanyPlan() in try-finally
+so loading=false and deactivateLoading() are guaranteed even when
+companyPlan is null.
+
+Group 5 (project-creation): Added getProject mock for the fake
+mock-e2e-project ID so upload-v2 can initialize without hitting
+the real backend.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (2026-06-29, e6d88e9)

@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "test": "npx playwright test",
+    "test:select": "node scripts/select-env.js",
+    "test:staging": "ACTIVE_ENV=staging npx playwright test",
+    "test:dev": "ACTIVE_ENV=dev npx playwright test",
+    "test:prod": "ACTIVE_ENV=prod npx playwright test",
     "test:smoke": "npx playwright test --grep @smoke",
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",

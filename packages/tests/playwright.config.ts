@@ -4,6 +4,25 @@ import path from "path";
 
 dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
+// ── Multi-env resolution ────────────────────────────────
+const env = (process.env.ACTIVE_ENV || "staging").toUpperCase();
+
+const BASE_URL =
+  process.env.BASE_URL ||
+  process.env[`${env}_BASE_URL`] ||
+  "https://staging.visionsamur.ai";
+
+const TEST_EMAIL =
+  process.env.TEST_EMAIL || process.env[`${env}_EMAIL`] || "";
+
+const TEST_PASSWORD =
+  process.env.TEST_PASSWORD || process.env[`${env}_PASSWORD`] || "";
+
+// Expose resolved values so environments.ts can reuse them
+process.env.BASE_URL = BASE_URL;
+process.env.TEST_EMAIL = TEST_EMAIL;
+process.env.TEST_PASSWORD = TEST_PASSWORD;
+
 export default defineConfig({
   testDir: "./tests",
   timeout: parseInt(process.env.TEST_TIMEOUT || "60000", 10),
@@ -20,7 +39,7 @@ export default defineConfig({
     ["./src/reporters/dashboard-reporter.ts"],
   ],
   use: {
-    baseURL: process.env.BASE_URL || "https://staging.visionsamur.ai",
+    baseURL: BASE_URL,
     trace: "on-first-retry",
     screenshot: "off",
     video: "retain-on-failure",

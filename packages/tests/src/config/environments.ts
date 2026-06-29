@@ -3,17 +3,38 @@ import path from "path";
 
 dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
 
+// ── Multi-env resolution ────────────────────────────────
+const env = (process.env.ACTIVE_ENV || "staging").toUpperCase();
+
+const resolvedBaseUrl =
+  process.env.BASE_URL ||
+  process.env[`${env}_BASE_URL`] ||
+  "https://staging.visionsamur.ai";
+
+const resolvedApiBaseUrl =
+  process.env.API_BASE_URL ||
+  process.env[`${env}_API_BASE_URL`] ||
+  `${resolvedBaseUrl.replace(/\/$/, "")}/api`;
+
+const resolvedEmail =
+  process.env.TEST_EMAIL || process.env[`${env}_EMAIL`] || "";
+
+const resolvedPassword =
+  process.env.TEST_PASSWORD || process.env[`${env}_PASSWORD`] || "";
+
 export const envConfig = {
-  baseUrl: process.env.BASE_URL || "https://staging.visionsamur.ai",
-  apiBaseUrl: process.env.API_BASE_URL || "https://staging.visionsamur.ai/api",
+  /** Active environment name (staging, dev, prod) */
+  name: env.toLowerCase(),
+  baseUrl: resolvedBaseUrl,
+  apiBaseUrl: resolvedApiBaseUrl,
   credentials: {
     admin: {
-      username: process.env.ADMIN_USERNAME || process.env.STAGING_EMAIL || "",
-      password: process.env.ADMIN_PASSWORD || process.env.STAGING_PASSWORD || "",
+      username: process.env.ADMIN_USERNAME || resolvedEmail,
+      password: process.env.ADMIN_PASSWORD || resolvedPassword,
     },
     standard: {
-      username: process.env.STANDARD_USERNAME || process.env.STAGING_EMAIL || "",
-      password: process.env.STANDARD_PASSWORD || process.env.STAGING_PASSWORD || "",
+      username: process.env.STANDARD_USERNAME || resolvedEmail,
+      password: process.env.STANDARD_PASSWORD || resolvedPassword,
     },
     google: {
       email: process.env.GOOGLE_EMAIL || "",
