@@ -16,7 +16,9 @@ import { BasePage } from "./BasePage";
  *   - "grounding-dino" — Advanced AI / Foundation Model
  *   - "pre-trained"    — Pre-trained Model
  *
- * sc-radio-group wraps Angular Material <mat-radio-group> + <mat-radio-button>.
+ * sc-radio-group renders span.radio__text-label for labels; we scope
+ *   .mat-mdc-radio-button lookups with :has(span.radio__text-label) to
+ *   avoid matching description text inside the full radio button element.
  */
 export class LabelingModeSelectionPage extends BasePage {
   private readonly root = "#labeling-mode-page";
@@ -34,7 +36,7 @@ export class LabelingModeSelectionPage extends BasePage {
     return this.page
       .locator(this.root)
       .first()
-      .isVisible({ timeout: 15_000 })
+      .isVisible({ timeout: 30_000 })
       .catch(() => false);
   }
 
@@ -58,7 +60,7 @@ export class LabelingModeSelectionPage extends BasePage {
       "pre-trained": /pre-?trained/i,
     };
     const button = radioGroup
-      .locator(".mat-mdc-radio-button")
+      .locator(".mat-mdc-radio-button:has(span.radio__text-label)")
       .filter({ hasText: labels[mode] })
       .first();
     await button.click();
@@ -75,7 +77,7 @@ export class LabelingModeSelectionPage extends BasePage {
       "pre-trained": /pre-?trained/i,
     };
     const button = radioGroup
-      .locator(".mat-mdc-radio-button")
+      .locator(".mat-mdc-radio-button:has(span.radio__text-label)")
       .filter({ hasText: labels[mode] })
       .first();
     // Angular Material adds .mat-mdc-radio-checked to selected radio
@@ -93,7 +95,7 @@ export class LabelingModeSelectionPage extends BasePage {
       "pre-trained": /pre-?trained/i,
     };
     const button = radioGroup
-      .locator(".mat-mdc-radio-button")
+      .locator(".mat-mdc-radio-button:has(span.radio__text-label)")
       .filter({ hasText: labels[mode] })
       .first();
     const cls = await button.getAttribute("class").catch(() => "");

@@ -15,6 +15,8 @@ import { BasePage } from "./BasePage";
  * - Default Labeler:     <sc-dropdown id="project-creation-default-labeler-dropdown">
  * - Default Reviewer:    <sc-dropdown id="project-creation-default-reviewer-dropdown">
  * - Platform Version:    <sc-radio-group id="project-creation-platform-version-radio">
+ * - Classification Type: <sc-radio-group id="project-creation-platform-version-radio">
+ *   (duplicate ID — scoped via :has(span.radio__text-label) matching multi/single)
  * - Sharing Options:     <sc-radio-group id="project-creation-sharing-options-radio">
  * - Submit:              <button id="project-creation-submit-button">
  * - Success Dialog:      <div id="project-creation-success-dialog">
@@ -34,6 +36,9 @@ export class ProjectCreationPage extends BasePage {
   private readonly labelerDropdown = "#project-creation-default-labeler-dropdown";
   private readonly reviewerDropdown = "#project-creation-default-reviewer-dropdown";
   private readonly platformVersionRadio = "#project-creation-platform-version-radio";
+  // Classification type radio group shares the same ID as platform version.
+  // Use :has() to scope to the group containing multi/single label options.
+  private readonly classificationTypeRadio = 'sc-radio-group:has(span.radio__text-label:is(:text("Multi-label"), :text("Single-label")))';
   private readonly sharingRadio = "#project-creation-sharing-options-radio";
   private readonly submitButton = "#project-creation-submit-button";
 
@@ -124,8 +129,12 @@ export class ProjectCreationPage extends BasePage {
 
   async selectSharing(sharing: "private" | "public"): Promise<void> {
     const radioGroup = this.page.locator(this.sharingRadio);
-    const option = radioGroup.locator(`label:has-text("${sharing === "private" ? "Private" : "Public"}"), input[value="${sharing}"]`).first();
-    await option.click();
+    const labelPattern = sharing === "private" ? /private/i : /public/i;
+    const labelSpan = radioGroup
+      .locator("span.radio__text-label")
+      .filter({ hasText: labelPattern });
+    await labelSpan.first().waitFor({ state: "visible", timeout: 15_000 });
+    await labelSpan.first().click({ timeout: 15_000 });
     await this.page.waitForTimeout(300);
   }
 
@@ -136,58 +145,56 @@ export class ProjectCreationPage extends BasePage {
   }
 
   async selectVersion(version: "v1" | "v2"): Promise<void> {
-    const radioGroup = this.page.locator(this.platformVersionRadio);
+    const radioGroup = this.page.locator(this.platformVersionRadio).first();
     const label = version.toUpperCase();
-    await radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: new RegExp(`^${label}$`) })
-      .first()
-      .click();
+    // Wait for translations to load — versionItems is populated async via translate.get()
+    // Target the label span directly since the radio button also contains description text
+    // which breaks /^V1$/ regex matching on the full element text content
+    const labelSpan = radioGroup
+      .locator("span.radio__text-label")
+      .filter({ hasText: label });
+    await labelSpan.first().waitFor({ state: "visible", timeout: 30_000 });
+    await labelSpan.first().click({ timeout: 30_000 });
     await this.page.waitForTimeout(300);
   }
 
   async isVersionSelected(version: "v1" | "v2"): Promise<boolean> {
-    const radioGroup = this.page.locator(this.platformVersionRadio);
+    const radioGroup = this.page.locator(this.platformVersionRadio).first();
     const label = version.toUpperCase();
     const button = radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: new RegExp(`^${label}$`) })
+      .locator(`mat-radio-button`)
+      .filter({ has: this.page.locator("span.radio__text-label", { hasText: label }) })
       .first();
     const cls = await button.getAttribute("class").catch(() => "");
     return cls !== null && cls.includes("mat-mdc-radio-checked");
   }
 
   // ── Classification Type (V2 + Classification only) ─────────────────────
-  //
-  // NOTE: The frontend template reuses id="project-creation-platform-version-radio"
-  // for both the platform version and classification type radio groups.
-  // When both are visible, nth(0) = platform version, nth(1) = classification type.
 
   async isClassificationTypeVisible(): Promise<boolean> {
     return this.page
-      .locator(this.platformVersionRadio)
-      .nth(1)
+      .locator(this.classificationTypeRadio)
       .isVisible({ timeout: 3_000 })
       .catch(() => false);
   }
 
   async selectClassificationType(type: "multi-label" | "single-label"): Promise<void> {
-    const radioGroup = this.page.locator(this.platformVersionRadio).nth(1);
-    const label = type === "multi-label" ? /multi/i : /single/i;
-    await radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: label })
-      .first()
-      .click();
+    const radioGroup = this.page.locator(this.classificationTypeRadio);
+    const labelPattern = type === "multi-label" ? /multi/i : /single/i;
+    const labelSpan = radioGroup
+      .locator("span.radio__text-label")
+      .filter({ hasText: labelPattern });
+    await labelSpan.first().waitFor({ state: "visible", timeout: 15_000 });
+    await labelSpan.first().click({ timeout: 15_000 });
     await this.page.waitForTimeout(300);
   }
 
   async isClassificationTypeSelected(type: "multi-label" | "single-label"): Promise<boolean> {
-    const radioGroup = this.page.locator(this.platformVersionRadio).nth(1);
-    const label = type === "multi-label" ? /multi/i : /single/i;
+    const radioGroup = this.page.locator(this.classificationTypeRadio);
+    const labelPattern = type === "multi-label" ? /multi/i : /single/i;
     const button = radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: label })
+      .locator("mat-radio-button")
+      .filter({ has: this.page.locator("span.radio__text-label", { hasText: labelPattern }) })
       .first();
     const cls = await button.getAttribute("class").catch(() => "");
     return cls !== null && cls.includes("mat-mdc-radio-checked");
@@ -210,12 +217,11 @@ export class ProjectCreationPage extends BasePage {
   // ── Success Dialog ──────────────────────────────────────────────────────
 
   async isSuccessDialogVisible(): Promise<boolean> {
-    // The dialog container gets id="project-creation-success-dialog" via [attr.id]="dialogContent.dialogId".
-    // Fall back to checking for the known button IDs inside the dialog.
+    // Real backend API call can take several seconds — wait up to 30s
     const dialogVisible = await this.page
       .locator(this.successDialog)
       .first()
-      .isVisible({ timeout: 10_000 })
+      .isVisible({ timeout: 30_000 })
       .catch(() => false);
     if (dialogVisible) return true;
 
@@ -223,7 +229,7 @@ export class ProjectCreationPage extends BasePage {
     return this.page
       .locator("#project-creation-success-upload-dataset")
       .first()
-      .isVisible({ timeout: 5_000 })
+      .isVisible({ timeout: 10_000 })
       .catch(() => false);
   }
 

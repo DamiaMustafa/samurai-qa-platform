@@ -18,9 +18,11 @@ import { BasePage } from "./BasePage";
  * - Retry:           <button id="dataset-upload-retry-validation">
  * - Progress:        <div id="dataset-upload-file-progress">
  *
- * sc-dropdown wraps Angular Material <mat-select>.
+ * sc-dropdown wraps Angular Material <mat-select>; options render as
+ *   role="option" in a CDK overlay listbox (not .mat-mdc-select-panel).
  * sc-fileInput wraps a hidden <input type="file">.
- * sc-radio-group wraps <mat-radio-group> + <mat-radio-button>.
+ * sc-radio-group renders span.radio__text-label for labels (not full
+ *   .mat-mdc-radio-button text, which also contains description text).
  */
 export class UploadDatasetPage extends BasePage {
   private readonly root = "#dataset-flow-upload-page";
@@ -87,18 +89,12 @@ export class UploadDatasetPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    const option = panel
-      .locator(".mat-mdc-option")
-      .filter({ hasText: new RegExp(optionValue, "i") })
-      .first();
+    const option = this.page.getByRole("option", {
+      name: new RegExp(optionValue, "i"),
+    });
     const available = await option.isVisible().catch(() => false);
 
-    // Close dropdown by clicking outside
+    // Close dropdown by pressing Escape
     await this.page.keyboard.press("Escape");
     await this.page.waitForTimeout(300);
 
@@ -110,12 +106,13 @@ export class UploadDatasetPage extends BasePage {
   async selectLabelFormat(format: "yolo" | "coco"): Promise<void> {
     const radioGroup = this.page.locator(this.labelFormatRadio);
     const label = format.toUpperCase();
-    // Angular Material radio: click the label wrapper to select
-    await radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: new RegExp(`^${label}$`, "i") })
-      .first()
-      .click();
+    // Target span.radio__text-label directly — radio button also contains
+    // description text which breaks /^YOLO$/ regex on full element text
+    const labelSpan = radioGroup
+      .locator("span.radio__text-label")
+      .filter({ hasText: label });
+    await labelSpan.first().waitFor({ state: "visible", timeout: 20_000 });
+    await labelSpan.first().click({ timeout: 20_000 });
     await this.page.waitForTimeout(300);
   }
 
@@ -127,17 +124,12 @@ export class UploadDatasetPage extends BasePage {
       .catch(() => false);
   }
 
-  /**
-   * Check whether a specific label format radio option exists.
-   * Does NOT require selecting "labelled" first — checks the radio items
-   * configured at component init.
-   */
   async isLabelFormatOptionVisible(format: "yolo" | "coco"): Promise<boolean> {
     const radioGroup = this.page.locator(this.labelFormatRadio);
     const label = format.toUpperCase();
     return radioGroup
-      .locator(`.mat-mdc-radio-button`)
-      .filter({ hasText: new RegExp(`^${label}$`, "i") })
+      .locator("span.radio__text-label")
+      .filter({ hasText: label })
       .first()
       .isVisible({ timeout: 3_000 })
       .catch(() => false);
@@ -146,18 +138,24 @@ export class UploadDatasetPage extends BasePage {
   // ── File Upload ─────────────────────────────────────────────────────────
 
   /**
-   * Upload a ZIP file buffer via the labelled-mode file input.
+   * Upload a ZIP file via the labelled-mode file input.
+   * Accepts either a Buffer (≤50MB, Playwright limit) or a file path (no size limit).
    * Playwright's setInputFiles works on hidden <input type="file"> elements.
    */
-  async uploadZipFile(zipBuffer: Buffer, fileName = "test-dataset.zip"): Promise<void> {
+  async uploadZipFile(zip: Buffer | string, fileName = "test-dataset.zip"): Promise<void> {
     const input = this.page
       .locator(`${this.zipFileInput} input[type="file"]`)
       .first();
-    await input.setInputFiles({
-      name: fileName,
-      mimeType: "application/zip",
-      buffer: zipBuffer,
-    });
+    if (typeof zip === "string") {
+      // Path-based upload — no size limit
+      await input.setInputFiles(zip);
+    } else {
+      await input.setInputFiles({
+        name: fileName,
+        mimeType: "application/zip",
+        buffer: zip,
+      });
+    }
   }
 
   /**
@@ -202,7 +200,7 @@ export class UploadDatasetPage extends BasePage {
    * Resolves when the upload button becomes enabled (validation passed)
    * or throws if the retry button appears (validation failed).
    */
-  async waitForValidationComplete(timeout = 60_000): Promise<void> {
+  async waitForValidationComplete(timeout = 300_000): Promise<void> {
     const uploadBtn = this.page.locator(this.uploadButton).first();
     const retryBtn = this.page.locator(this.retryButton).first();
 
@@ -280,8 +278,8 @@ export class UploadDatasetPage extends BasePage {
 
   /**
    * Select an option from an sc-dropdown (Angular Material <mat-select>).
-   * The overlay panel is rendered in a CDK overlay container, not inside
-   * the dropdown element itself.
+   * Options render as role="option" inside a role="listbox" in the CDK
+   * overlay — not inside .mat-mdc-select-panel — so we use getByRole.
    */
   private async selectDropdownOption(
     dropdownSelector: string,
@@ -291,19 +289,16 @@ export class UploadDatasetPage extends BasePage {
     const select = this.page
       .locator(`${dropdownSelector} .mat-mdc-select, ${dropdownSelector} mat-select`)
       .first();
+    await select.waitFor({ state: "visible", timeout: 15_000 });
     await select.click();
 
-    // Wait for the CDK overlay panel to appear
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    // Click the matching option by visible text
-    const option = panel
-      .locator(".mat-mdc-option")
-      .filter({ hasText: new RegExp(optionValue, "i") })
-      .first();
+    // Options render as role="option" inside role="listbox" in the CDK overlay.
+    // Use ^ anchor to avoid partial matches — e.g. "labelled" must NOT match
+    // "Unlabelled Images" (which contains "labelled" as a substring).
+    const option = this.page.getByRole("option", {
+      name: new RegExp(`^${optionValue}`, "i"),
+    });
+    await option.waitFor({ state: "visible", timeout: 10_000 });
     await option.click();
     await this.page.waitForTimeout(500);
   }

@@ -24,7 +24,16 @@ process.env.TEST_EMAIL = TEST_EMAIL;
 process.env.TEST_PASSWORD = TEST_PASSWORD;
 
 export default defineConfig({
-  testDir: "./tests",
+  testDir: ".",
+  testMatch: [
+    "tests/**/*.spec.ts",
+    "e2e/**/*.spec.ts",
+  ],
+  testIgnore: [
+    "node_modules/**",
+    "src/**/*.ts",
+    "scripts/**",
+  ],
   timeout: parseInt(process.env.TEST_TIMEOUT || "60000", 10),
   expect: { timeout: 10000 },
   fullyParallel: false,

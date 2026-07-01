@@ -138,12 +138,8 @@ export class AdvanceTrainingFormPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    const options = panel.locator(".mat-mdc-option");
+    const options = this.page.getByRole("option");
+    await options.first().waitFor({ state: "visible", timeout: 5_000 });
     const count = await options.count();
     const labels: string[] = [];
     for (let i = 0; i < count; i++) {
@@ -167,15 +163,9 @@ export class AdvanceTrainingFormPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    const option = panel
-      .locator(".mat-mdc-option")
-      .filter({ hasText: new RegExp(`^${modelType}$`, "i") })
-      .first();
+    const option = this.page.getByRole("option", {
+      name: new RegExp(`^${modelType}$`, "i"),
+    });
     const exists = await option.isVisible().catch(() => false);
 
     await this.page.keyboard.press("Escape");
@@ -252,12 +242,9 @@ export class AdvanceTrainingFormPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    await panel.locator(".mat-mdc-option").first().click();
+    // Wait for overlay to render, then pick the first role="option"
+    await this.page.getByRole("option").first().waitFor({ state: "visible", timeout: 5_000 });
+    await this.page.getByRole("option").first().click();
     await this.page.waitForTimeout(500);
   }
 
@@ -270,16 +257,11 @@ export class AdvanceTrainingFormPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    await panel
-      .locator(".mat-mdc-option")
-      .filter({ hasText: new RegExp(`^${optionText}$`, "i") })
-      .first()
-      .click();
+    const option = this.page.getByRole("option", {
+      name: new RegExp(`^${optionText}$`, "i"),
+    });
+    await option.waitFor({ state: "visible", timeout: 5_000 });
+    await option.click();
     await this.page.waitForTimeout(500);
   }
 }

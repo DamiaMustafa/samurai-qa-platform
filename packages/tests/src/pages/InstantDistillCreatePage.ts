@@ -130,7 +130,7 @@ export class InstantDistillCreatePage extends BasePage {
     const radioGroup = this.page.locator(this.classificationRadio);
     const label = type === "multi-label" ? /multi/i : /single/i;
     await radioGroup
-      .locator(".mat-mdc-radio-button")
+      .locator(".mat-mdc-radio-button:has(span.radio__text-label)")
       .filter({ hasText: label })
       .first()
       .click();
@@ -143,7 +143,7 @@ export class InstantDistillCreatePage extends BasePage {
     const radioGroup = this.page.locator(this.classificationRadio);
     const label = type === "multi-label" ? /multi/i : /single/i;
     const button = radioGroup
-      .locator(".mat-mdc-radio-button")
+      .locator(".mat-mdc-radio-button:has(span.radio__text-label)")
       .filter({ hasText: label })
       .first();
     const cls = await button.getAttribute("class").catch(() => "");

@@ -71,3 +71,5 @@ mock-e2e-project ID so upload-v2 can initialize without hitting
 the real backend.
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (2026-06-29, e6d88e9)
+- **feat:** add multi-env support (staging/dev/prod) with interactive prompt (2026-06-29, 13e4e40)
+- **feat:** add multi-env support (staging/dev/prod) with interactive prompt (2026-06-29, 13e4e40)

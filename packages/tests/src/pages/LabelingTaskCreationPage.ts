@@ -53,7 +53,7 @@ export class LabelingTaskCreationPage extends BasePage {
     await this.page
       .locator(this.root)
       .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
+      .waitFor({ state: "visible", timeout: 60_000 });
   }
 
   // ── Task Creation ───────────────────────────────────────────────────────

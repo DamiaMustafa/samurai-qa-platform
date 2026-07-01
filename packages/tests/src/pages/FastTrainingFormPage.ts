@@ -2,7 +2,7 @@ import { type Page, expect } from "@playwright/test";
 import { BasePage } from "./BasePage";
 
 /**
- * FastTrainingFormPage — fast training form at /project/:id/train/fast-training.
+ * FastTrainingFormPage — fast training form at /project/:id/fast-training.
  *
  * DOM reference (verified against Angular template):
  * - Root:              <div id="fast-training-page" class="fast-training">
@@ -45,7 +45,7 @@ export class FastTrainingFormPage extends BasePage {
   // ── Page Load ───────────────────────────────────────────────────────────
 
   async goto(projectId: string): Promise<void> {
-    await this.navigate(`/project/${projectId}/train/fast-training`);
+    await this.navigate(`/project/${projectId}/fast-training`);
     await this.waitForReady();
   }
 
@@ -90,13 +90,9 @@ export class FastTrainingFormPage extends BasePage {
       .first();
     await select.click();
 
-    const panel = this.page
-      .locator(".mat-mdc-select-panel, .cdk-overlay-pane .mat-mdc-select-panel")
-      .first();
-    await panel.waitFor({ state: "visible", timeout: 5_000 });
-
-    // Click the first available option
-    const firstOption = panel.locator(".mat-mdc-option").first();
+    // Click the first available option via role="option" in the CDK overlay
+    const firstOption = this.page.getByRole("option").first();
+    await firstOption.waitFor({ state: "visible", timeout: 5_000 });
     await firstOption.click();
     await this.page.waitForTimeout(500);
   }
