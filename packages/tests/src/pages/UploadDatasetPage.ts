@@ -236,8 +236,66 @@ export class UploadDatasetPage extends BasePage {
    */
   async clickUploadDataset(): Promise<void> {
     await this.page.locator(this.uploadButton).first().click();
-    // Wait for navigation or next page to load
-    await this.page.waitForLoadState("networkidle");
+  }
+
+  /**
+   * Wait for the server-side file upload to complete.
+   * The upload shows a progress percentage (e.g. "3%", "100%").
+   * We wait until the progress indicator disappears or the page navigates
+   * away from the upload page.
+   *
+   * For large ZIPs (500MB+) this can take 5-15 minutes on staging.
+   */
+  async waitForUploadComplete(timeout = 900_000): Promise<void> {
+    // The upload progress indicator shows "X%" during upload.
+    // When upload completes, it either disappears or the page navigates.
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      // Check if we've navigated away from the upload page
+      const url = this.page.url();
+      if (!url.includes("/add") && !url.includes("/dataset/")) {
+        return; // Navigated away — upload complete
+      }
+
+      // Check if the upload page is still visible
+      const uploadPage = this.page.locator(this.root).first();
+      if (!(await uploadPage.isVisible().catch(() => false))) {
+        return; // Upload page gone — moved to next step
+      }
+
+      // Check if there's still an upload progress indicator visible.
+      // The progress area shows "X%" during upload. When done, it
+      // transitions to validation or disappears.
+      const progressText = await this.page
+        .locator(this.progressIndicator)
+        .textContent()
+        .catch(() => "");
+
+      // If progress shows a percentage, upload is still in progress
+      const percentMatch = progressText?.match(/(\d+)%/);
+      if (percentMatch) {
+        const percent = parseInt(percentMatch[1], 10);
+        if (percent >= 100) {
+          // Upload complete — wait for page transition
+          await this.page.waitForTimeout(3_000);
+          continue;
+        }
+      }
+
+      // No progress indicator or no percentage — may have completed
+      // Check if we see a "success" or "next step" indicator
+      const nextBtn = this.page.locator(this.nextStepButton).first();
+      if (await nextBtn.isVisible().catch(() => false)) {
+        return; // Next step button appeared — upload done
+      }
+
+      await this.page.waitForTimeout(5_000);
+    }
+
+    throw new Error(
+      `Server upload did not complete within ${timeout / 1000}s`
+    );
   }
 
   async isUploadButtonVisible(): Promise<boolean> {

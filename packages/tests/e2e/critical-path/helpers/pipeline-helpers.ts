@@ -157,6 +157,9 @@ export async function uploadLabeledZip(
   await uploadDatasetPage.waitForValidationComplete(600_000);
   await uploadDatasetPage.clickUploadDataset();
 
+  // Wait for the server-side upload to complete (614MB ZIP can take 5-15 min)
+  await uploadDatasetPage.waitForUploadComplete(900_000);
+
   // Assert console errors after upload
   assertCheckpoint(consoleErrors);
 
@@ -202,6 +205,9 @@ export async function uploadUnlabeledFolder(
   await uploadDatasetPage.waitForValidationComplete(600_000);
   await uploadDatasetPage.clickUploadDataset();
 
+  // Wait for the server-side upload to complete
+  await uploadDatasetPage.waitForUploadComplete(900_000);
+
   // Assert console errors after upload
   assertCheckpoint(consoleErrors);
 
@@ -233,6 +239,9 @@ export async function uploadVideo(
   // Wait for validation and submit
   await uploadDatasetPage.waitForValidationComplete(180_000);
   await uploadDatasetPage.clickUploadDataset();
+
+  // Wait for the server-side upload to complete
+  await uploadDatasetPage.waitForUploadComplete(600_000);
 
   // Assert console errors after upload
   assertCheckpoint(consoleErrors);
