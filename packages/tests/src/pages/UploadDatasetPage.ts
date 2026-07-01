@@ -298,9 +298,9 @@ export class UploadDatasetPage extends BasePage {
       }
 
       // Find the progress percentage in the upload area.
-      // The percentage is in a generic element (no stable ID) within
-      // the upload page. getByText with regex matches it reliably.
-      const percentEl = this.page.getByText(/^\d+%$/).first();
+      // Scoped to the upload page root to avoid matching percentages
+      // from unrelated page elements (stats widgets, sidebars, etc.).
+      const percentEl = this.page.locator(this.root).getByText(/^\d+%$/).first();
       const percentVisible = await percentEl
         .isVisible({ timeout: 1_000 })
         .catch(() => false);

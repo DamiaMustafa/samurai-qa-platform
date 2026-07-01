@@ -186,13 +186,21 @@ export async function uploadUnlabeledFolder(
     : fixturePath(config.folderPath);
 
   const imageExtensions = /\.(jpg|jpeg|png|bmp|webp|gif)$/i;
+  const mimeMap: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".bmp": "image/bmp",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+  };
   const files = fs
     .readdirSync(folderAbsPath)
     .filter((f) => imageExtensions.test(f))
     .slice(0, 50) // Cap at 50 images to keep upload time reasonable
     .map((f) => ({
       name: f,
-      mimeType: "image/jpeg",
+      mimeType: mimeMap[path.extname(f).toLowerCase()] || "image/jpeg",
       buffer: fs.readFileSync(path.join(folderAbsPath, f)),
     }));
 
@@ -1312,10 +1320,13 @@ export async function cleanupProject(
   // Try API archive first
   try {
     const api = createApiHelper(page, envConfig.apiBaseUrl);
-    await api.patch(`/projects/${projectId}`, { archived: true });
-    return;
+    const response = await api.patch(`/projects/${projectId}`, { archived: true });
+    if (response.ok()) {
+      return;
+    }
+    // Non-2xx response (403, 404, 500, etc.) — fall through to UI delete
   } catch {
-    // API archive failed — try UI delete
+    // Network/transport error — try UI delete
   }
 
   try {
