@@ -233,8 +233,26 @@ export class UploadDatasetPage extends BasePage {
 
   /**
    * Click the "Upload Dataset" button to submit the validated files.
+   *
+   * After validation, the app may show an "Uploading Information" dialog
+   * (CDK overlay) summarizing accepted/rejected images with a "Got it!" button.
+   * This dialog blocks pointer events on the upload button, so we dismiss it
+   * first if present.
    */
   async clickUploadDataset(): Promise<void> {
+    // Dismiss "Uploading Information" dialog if it appeared after validation
+    const gotItBtn = this.page
+      .locator(".cdk-overlay-pane button:has-text('Got it!')")
+      .first();
+    if (await gotItBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await gotItBtn.click();
+      // Wait for the overlay backdrop to disappear
+      await this.page
+        .locator(".cdk-overlay-backdrop")
+        .waitFor({ state: "hidden", timeout: 5_000 })
+        .catch(() => {});
+    }
+
     await this.page.locator(this.uploadButton).first().click();
   }
 
@@ -242,6 +260,9 @@ export class UploadDatasetPage extends BasePage {
    * Wait for the server-side file upload to complete.
    * The upload shows a progress percentage (e.g. "3%", "100%") in a
    * generic element inside the upload area — NOT inside #dataset-upload-file-progress.
+   *
+   * After the server upload reaches 100%, the app shows a "Next Step" button
+   * that must be clicked to navigate to the labeling task creation page.
    *
    * For large ZIPs (500MB+) this can take 30+ minutes on staging
    * depending on upload bandwidth.
@@ -262,6 +283,20 @@ export class UploadDatasetPage extends BasePage {
         return; // Upload page gone — moved to next step
       }
 
+      // After server upload completes, the app shows a "Next Step" button.
+      // Click it to proceed to the labeling task creation page.
+      // The button may have id="dataset-upload-next-step" or it may be
+      // the same upload button with text changed to "Next Step".
+      const nextStepBtn = this.page.locator(
+        `${this.nextStepButton}, ${this.uploadButton}:has-text("Next Step")`
+      ).first();
+      if (await nextStepBtn.isVisible({ timeout: 1_000 }).catch(() => false)) {
+        await nextStepBtn.click();
+        // Wait for navigation away from the upload page
+        await this.page.waitForLoadState("networkidle");
+        return;
+      }
+
       // Find the progress percentage in the upload area.
       // The percentage is in a generic element (no stable ID) within
       // the upload page. getByText with regex matches it reliably.
@@ -280,7 +315,7 @@ export class UploadDatasetPage extends BasePage {
             await this.page.waitForTimeout(10_000);
             continue;
           }
-          // 100% — wait for page transition
+          // 100% — wait for "Next Step" button or page transition
           await this.page.waitForTimeout(5_000);
           continue;
         }
@@ -288,8 +323,9 @@ export class UploadDatasetPage extends BasePage {
 
       // No percentage visible — upload may have completed or not started.
       // Check if a next-step button or success indicator appeared.
-      const nextBtn = this.page.locator(this.nextStepButton).first();
-      if (await nextBtn.isVisible().catch(() => false)) {
+      if (await nextStepBtn.isVisible().catch(() => false)) {
+        await nextStepBtn.click();
+        await this.page.waitForLoadState("networkidle");
         return;
       }
 

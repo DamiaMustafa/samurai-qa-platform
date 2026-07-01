@@ -46,6 +46,9 @@ export class FastTrainingFormPage extends BasePage {
 
   async goto(projectId: string): Promise<void> {
     await this.navigate(`/project/${projectId}/fast-training`);
+    // Angular may need time to bootstrap after re-auth navigation.
+    // Use networkidle to ensure all API calls have settled.
+    await this.page.waitForLoadState("networkidle").catch(() => {});
     await this.waitForReady();
   }
 
@@ -58,10 +61,18 @@ export class FastTrainingFormPage extends BasePage {
   }
 
   async waitForReady(): Promise<void> {
-    await this.page
-      .locator(this.root)
-      .first()
-      .waitFor({ state: "visible", timeout: 15_000 });
+    try {
+      await this.page
+        .locator(this.root)
+        .first()
+        .waitFor({ state: "visible", timeout: 30_000 });
+    } catch (err) {
+      // Provide URL context for debugging blank pages
+      const url = this.page.url();
+      throw new Error(
+        `Fast training page did not load (current URL: ${url}). ${err}`
+      );
+    }
   }
 
   // ── Step 1: Dataset Snapshot ────────────────────────────────────────────

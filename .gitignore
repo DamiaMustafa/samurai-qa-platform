@@ -39,6 +39,13 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Large test fixture binaries — use Git LFS or store externally
+packages/tests/fixtures/datasets/*.zip
+packages/tests/fixtures/datasets/*.mp4
+packages/tests/fixtures/datasets/cls_unlabeled/
+packages/tests/fixtures/datasets/od_unlabeled/
+packages/tests/fixtures/datasets/road_segmentationv1.1.v4i.coco/
+
 # IDE
 .vscode/
 .idea/

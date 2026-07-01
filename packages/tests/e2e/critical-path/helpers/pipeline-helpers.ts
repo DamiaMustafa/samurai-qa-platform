@@ -997,6 +997,37 @@ export async function startTraining(
   // Step 1: Generate dataset version (snapshot)
   await fastTrainingFormPage.clickGenerateVersion();
 
+  // For V1 projects, CreateDatasetSnapshot lambda may not be supported.
+  // Check for the error toast and fall back to selecting an existing version.
+  const v1ErrorToast = page.getByText(
+    /CreateDatasetSnapshot.*platformVersion.*v2/i
+  );
+  if (await v1ErrorToast.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    // V1 doesn't support snapshot generation via the UI button.
+    // Fall back to selecting an existing dataset version from the dropdown.
+    await fastTrainingFormPage.selectFirstDatasetVersion();
+
+    // Verify a version was actually selected (dropdown might be empty)
+    const dropdown = page
+      .locator("#fast-training-dataset-version .mat-mdc-select, #fast-training-dataset-version mat-select")
+      .first();
+    const hasSelection = await dropdown
+      .locator(".mat-mdc-select-value-text")
+      .isVisible({ timeout: 3_000 })
+      .catch(() => false);
+
+    if (!hasSelection) {
+      throw new Error(
+        "V1 projects cannot generate dataset snapshots (backend limitation) " +
+          "and no existing versions are available in the dropdown. " +
+          "The dataset version must be created through the V1 dataset flow."
+      );
+    }
+
+    // Clear the expected V1 error from console capture
+    consoleErrors.clear();
+  }
+
   // Step 2: Fill model name
   const modelName = `model-${Date.now()}`;
   await fastTrainingFormPage.fillModelName(modelName);

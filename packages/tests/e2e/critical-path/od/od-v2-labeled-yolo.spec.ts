@@ -10,6 +10,7 @@ import {
   submitPreLabeledTask,
   runReview,
   startTraining,
+  waitForTrainingCompletion,
   deployModel,
   cleanupProject,
   fixturePath,
@@ -18,9 +19,16 @@ import { assertCheckpoint } from "../helpers/critical-path.helpers";
 
 /**
  * Critical Path E2E — OD V2 + Labeled YOLO
+ *
+ * Full pipeline (2-phase training):
+ *   Sign in → Create OD V2 project → Upload YOLO labeled ZIP →
+ *   Create labeling task → Submit (pre-labeled) → Review →
+ *   Fast Train Phase 1 (start + verify IN-PROGRESS) →
+ *   Fast Train Phase 2 (poll for DONE, up to 6 hours) →
+ *   Deploy → Cleanup
  */
 test.describe("Critical Path — OD V2 Labeled YOLO @critical-path @od", () => {
-  test.setTimeout(60 * 60 * 1000);
+  test.setTimeout(8 * 60 * 60 * 1000); // 8 hours — training can take 4-6h
 
   let projectId: string | undefined;
 
@@ -52,7 +60,7 @@ test.describe("Critical Path — OD V2 Labeled YOLO @critical-path @od", () => {
     }, consoleErrors);
 
     await uploadLabeledZip(page, uploadDatasetPage, {
-      zipPath: fixturePath("od_labeled_yolo.zip"),
+      zipPath: fixturePath("od_labeled_yolo_bbox.zip"),
       format: "yolo",
     }, consoleErrors);
 
@@ -61,7 +69,15 @@ test.describe("Critical Path — OD V2 Labeled YOLO @critical-path @od", () => {
     await publishDataset(page, labelingTaskCreationPage, consoleErrors);
     await submitPreLabeledTask(page, projectId, consoleErrors);
     await runReview(page, projectId, consoleErrors);
-    await startTraining(page, fastTrainingFormPage, projectId, consoleErrors);
+
+    // Step 8a: Start training (Phase 1 — start + verify IN-PROGRESS)
+    const trainingState = await startTraining(page, fastTrainingFormPage, projectId, consoleErrors);
+
+    // Step 8b: Wait for training completion (Phase 2 — poll for DONE)
+    if (trainingState.phase === "in-progress") {
+      await waitForTrainingCompletion(page, trainingState, consoleErrors);
+    }
+
     await deployModel(page, deployPage, projectId, consoleErrors);
   });
 });

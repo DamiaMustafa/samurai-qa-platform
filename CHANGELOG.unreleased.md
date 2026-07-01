@@ -73,3 +73,17 @@ the real backend.
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com> (2026-06-29, e6d88e9)
 - **feat:** add multi-env support (staging/dev/prod) with interactive prompt (2026-06-29, 13e4e40)
 - **feat:** add multi-env support (staging/dev/prod) with interactive prompt (2026-06-29, 13e4e40)
+- **fix:** split training into 2 phases (Phase 1 start + Phase 2 poll for completion) (2026-07-01, a609971)
+- **fix:** wait for server-side upload completion before navigating to labeling task
+
+UploadDatasetPage.clickUploadDataset() was returning immediately after
+clicking, but 614MB ZIP uploads take 5-15 minutes on staging. Added
+waitForUploadComplete() that polls the progress indicator until the
+upload finishes, then waits for page navigation. Applied to all 3 upload
+paths (labeled ZIP, unlabeled folder, video). (2026-07-01, 93f580c)
+- **fix:** use text-based selector for upload progress, increase timeout to 60min
+
+The progress percentage (e.g. '34%') is in a generic DOM element with no
+stable ID, not in #dataset-upload-file-progress. Switched to getByText
+with /^\d+%$/ regex. Also increased timeout from 15min to 60min since
+614MB ZIP uploads can take 30+ minutes on staging. (2026-07-01, b233245)
