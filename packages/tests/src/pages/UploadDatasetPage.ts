@@ -240,15 +240,13 @@ export class UploadDatasetPage extends BasePage {
 
   /**
    * Wait for the server-side file upload to complete.
-   * The upload shows a progress percentage (e.g. "3%", "100%").
-   * We wait until the progress indicator disappears or the page navigates
-   * away from the upload page.
+   * The upload shows a progress percentage (e.g. "3%", "100%") in a
+   * generic element inside the upload area — NOT inside #dataset-upload-file-progress.
    *
-   * For large ZIPs (500MB+) this can take 5-15 minutes on staging.
+   * For large ZIPs (500MB+) this can take 30+ minutes on staging
+   * depending on upload bandwidth.
    */
-  async waitForUploadComplete(timeout = 900_000): Promise<void> {
-    // The upload progress indicator shows "X%" during upload.
-    // When upload completes, it either disappears or the page navigates.
+  async waitForUploadComplete(timeout = 3_600_000): Promise<void> {
     const deadline = Date.now() + timeout;
 
     while (Date.now() < deadline) {
@@ -264,37 +262,43 @@ export class UploadDatasetPage extends BasePage {
         return; // Upload page gone — moved to next step
       }
 
-      // Check if there's still an upload progress indicator visible.
-      // The progress area shows "X%" during upload. When done, it
-      // transitions to validation or disappears.
-      const progressText = await this.page
-        .locator(this.progressIndicator)
-        .textContent()
-        .catch(() => "");
+      // Find the progress percentage in the upload area.
+      // The percentage is in a generic element (no stable ID) within
+      // the upload page. getByText with regex matches it reliably.
+      const percentEl = this.page.getByText(/^\d+%$/).first();
+      const percentVisible = await percentEl
+        .isVisible({ timeout: 1_000 })
+        .catch(() => false);
 
-      // If progress shows a percentage, upload is still in progress
-      const percentMatch = progressText?.match(/(\d+)%/);
-      if (percentMatch) {
-        const percent = parseInt(percentMatch[1], 10);
-        if (percent >= 100) {
-          // Upload complete — wait for page transition
-          await this.page.waitForTimeout(3_000);
+      if (percentVisible) {
+        const text = (await percentEl.textContent().catch(() => "")) || "";
+        const match = text.match(/(\d+)%/);
+        if (match) {
+          const pct = parseInt(match[1], 10);
+          if (pct < 100) {
+            // Still uploading — wait and poll again
+            await this.page.waitForTimeout(10_000);
+            continue;
+          }
+          // 100% — wait for page transition
+          await this.page.waitForTimeout(5_000);
           continue;
         }
       }
 
-      // No progress indicator or no percentage — may have completed
-      // Check if we see a "success" or "next step" indicator
+      // No percentage visible — upload may have completed or not started.
+      // Check if a next-step button or success indicator appeared.
       const nextBtn = this.page.locator(this.nextStepButton).first();
       if (await nextBtn.isVisible().catch(() => false)) {
-        return; // Next step button appeared — upload done
+        return;
       }
 
-      await this.page.waitForTimeout(5_000);
+      // Wait and poll again
+      await this.page.waitForTimeout(10_000);
     }
 
     throw new Error(
-      `Server upload did not complete within ${timeout / 1000}s`
+      `Server upload did not complete within ${timeout / 60_000} minutes`
     );
   }
 
