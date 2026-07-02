@@ -10,31 +10,52 @@ import {
   submitPreLabeledTask,
   runReview,
   startTraining,
+  waitForTrainingCompletion,
   deployModel,
   cleanupProject,
   fixturePath,
+  sendSlackNotification,
 } from "../helpers/pipeline-helpers";
 
 /**
  * Critical Path E2E — CLS V2 + Labeled YOLO Multi-Label
+ *
+ * Full pipeline (2-phase training):
+ *   Sign in → Create CLS V2 project → Upload YOLO labeled ZIP →
+ *   Create labeling task → Submit (pre-labeled) → Review →
+ *   Fast Train Phase 1 (start + verify IN-PROGRESS) →
+ *   Fast Train Phase 2 (poll for DONE, up to 6 hours) →
+ *   Deploy → Cleanup
  */
+const TEST_TITLE = "full pipeline: CLS V2 + YOLO multi-label → train → deploy";
+
 test.describe("Critical Path — CLS V2 Labeled YOLO Multi @critical-path @cls", () => {
-  test.setTimeout(60 * 60 * 1000);
+  test.setTimeout(8 * 60 * 60 * 1000); // 8 hours — training can take 4-6h
 
   let projectId: string | undefined;
+  let projectName: string = "";
 
   test.skip(!envConfig.credentials.admin.username, "Admin credentials not configured");
 
   test.beforeEach(async ({ loginPage, page }) => {
     await signIn(page, loginPage);
     projectId = undefined;
+    projectName = `E2E-CLS-V2-YOLO-Labeled-Multi-${new Date().toISOString().substring(0, 10)}-${String(new Date().getHours()).padStart(2, "0")}-${String(new Date().getMinutes()).padStart(2, "0")}`;
+    await sendSlackNotification(TEST_TITLE, projectName, "started");
   });
 
-  test.afterEach(async ({ page }) => {
+  test.afterEach(async ({ page }, testInfo) => {
+    const status = testInfo.status === "failed" ? "failed" : "passed";
+    await sendSlackNotification(
+      TEST_TITLE,
+      projectName,
+      status,
+      status === "failed" ? testInfo.errors?.[0]?.message : undefined
+    );
     if (projectId) await cleanupProject(page, projectId);
   });
 
-  test("full pipeline: CLS V2 + YOLO multi-label → train → deploy", async ({
+  test(TEST_TITLE, async ({
     page,
     projectCreationPage,
     uploadDatasetPage,
@@ -48,7 +69,7 @@ test.describe("Critical Path — CLS V2 Labeled YOLO Multi @critical-path @cls",
       projectType: "classification",
       version: "v2",
       classificationType: "multi-label",
-      namePrefix: "CP-CLS-V2-YOLO-M",
+      namePrefix: "E2E-CLS-V2-YOLO-Labeled-Multi",
     }, consoleErrors);
 
     await uploadLabeledZip(page, uploadDatasetPage, {
@@ -61,7 +82,17 @@ test.describe("Critical Path — CLS V2 Labeled YOLO Multi @critical-path @cls",
     await publishDataset(page, labelingTaskCreationPage, consoleErrors);
     await submitPreLabeledTask(page, projectId, consoleErrors);
     await runReview(page, projectId, consoleErrors);
-    await startTraining(page, fastTrainingFormPage, projectId, consoleErrors);
+
+    // Step 8a: Start training (Phase 1 — start + verify IN-PROGRESS)
+    const trainingState = await startTraining(page, fastTrainingFormPage, projectId, consoleErrors, {
+      trainingNamePrefix: "E2E-FastTrain-CLS-V2-YOLO-Multi",
+    });
+
+    // Step 8b: Wait for training completion (Phase 2 — poll for DONE)
+    if (trainingState.phase === "in-progress") {
+      await waitForTrainingCompletion(page, trainingState, consoleErrors);
+    }
+
     await deployModel(page, deployPage, projectId, consoleErrors);
   });
 });

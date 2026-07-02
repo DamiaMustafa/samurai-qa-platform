@@ -6,6 +6,45 @@ import { createApiHelper } from "../../../src/helpers/api-helper";
 import { timestamp } from "../../../src/helpers/data-generator";
 import { assertCheckpoint, type ConsoleCapture } from "./critical-path.helpers";
 
+// ── Slack Notification ───────────────────────────────────────────────────────
+
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL ?? "";
+
+/**
+ * Send a Slack notification for E2E test lifecycle events.
+ * Fires on test start and on pass/fail with project name and error details.
+ *
+ * Failures are silently caught so notifications never break the test.
+ */
+export async function sendSlackNotification(
+  testName: string,
+  projectName: string,
+  status: "started" | "passed" | "failed",
+  errorMessage?: string
+): Promise<void> {
+  const timestamp = new Date().toISOString().replace("T", " ").substring(0, 19);
+
+  let text: string;
+  if (status === "started") {
+    text = `🚀 *E2E Test Started*\n> *Test:* ${testName}\n> *Project:* ${projectName}\n> *Time:* ${timestamp} UTC`;
+  } else if (status === "passed") {
+    text = `✅ *E2E Test Passed*\n> *Test:* ${testName}\n> *Project:* ${projectName}\n> *Time:* ${timestamp} UTC`;
+  } else {
+    text = `❌ *E2E Test Failed*\n> *Test:* ${testName}\n> *Project:* ${projectName}\n> *Error:* ${errorMessage || "Unknown error"}\n> *Time:* ${timestamp} UTC`;
+  }
+
+  try {
+    await fetch(SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    // Slack notifications are best-effort — never fail the test
+  }
+}
+
 // ── Fixture file paths ───────────────────────────────────────────────────────
 
 const FIXTURES_DIR = path.resolve(
@@ -51,6 +90,22 @@ export function fixturePath(relative: string): string {
   return path.join(FIXTURES_DIR, relative);
 }
 
+// ── Date format helper ────────────────────────────────────────────────────────
+
+/**
+ * Format current date/time as "YYYY-MM-DD-HH-mm" for human-readable
+ * project and training names. Easy to identify in the Samurai UI.
+ */
+function formatDateSuffix(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const MM = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${MM}-${dd}-${hh}-${mm}`;
+}
+
 // ── Step 1: Sign In ──────────────────────────────────────────────────────────
 
 export async function signIn(
@@ -72,8 +127,8 @@ export async function createProject(
   config: CreateProjectConfig,
   consoleErrors: ConsoleCapture
 ): Promise<string> {
-  const suffix = Date.now();
-  const prefix = config.namePrefix || `CP-${config.projectType}-${config.version}`;
+  const suffix = formatDateSuffix();
+  const prefix = config.namePrefix || `E2E-${config.projectType}-${config.version}`;
   const projectName = `${prefix}-${suffix}`;
 
   // Navigate to project creation
@@ -958,6 +1013,13 @@ export interface StartTrainingOptions {
    * Only used when waitForCompletion is true.
    */
   completionTimeoutMs?: number;
+  /**
+   * Prefix for the training/model name. If provided, the model name
+   * will be "{prefix}-{YYYY-MM-DD}-{HH-mm}" instead of the default
+   * "model-{timestamp}".
+   * Example: "E2E-FastTrain-OD-V1-YOLO" → "E2E-FastTrain-OD-V1-YOLO-2025-07-02-14-30"
+   */
+  trainingNamePrefix?: string;
 }
 
 /**
@@ -1037,7 +1099,9 @@ export async function startTraining(
   }
 
   // Step 2: Fill model name
-  const modelName = `model-${Date.now()}`;
+  const modelName = options?.trainingNamePrefix
+    ? `${options.trainingNamePrefix}-${formatDateSuffix()}`
+    : `model-${Date.now()}`;
   await fastTrainingFormPage.fillModelName(modelName);
 
   // Step 3: Fill optional description
@@ -1226,11 +1290,26 @@ export async function deployModel(
   await deployPage.goto(projectId);
   expect(await deployPage.isLoaded()).toBe(true);
 
-  // Click "Create Endpoint" button
+  // Click "Create Endpoint" button — wait for it to become enabled (not just visible)
+  // The button appears immediately but is disabled until the trained model is ready.
   const createBtn = page
     .locator("#deploy-create-endpoint")
     .first();
   await createBtn.waitFor({ state: "visible", timeout: 15_000 });
+
+  // Poll up to 60 seconds for the button to become enabled
+  const enabledDeadline = Date.now() + 60_000;
+  let isEnabled = false;
+  while (Date.now() < enabledDeadline) {
+    isEnabled = await createBtn.isEnabled().catch(() => false);
+    if (isEnabled) break;
+    await page.waitForTimeout(3_000);
+  }
+  if (!isEnabled) {
+    throw new Error(
+      "Create Endpoint button did not become enabled within 60 seconds"
+    );
+  }
   await createBtn.click();
 
   // Wait for the create endpoint dialog/form to appear

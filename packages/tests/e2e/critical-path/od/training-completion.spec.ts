@@ -6,6 +6,7 @@ import {
   deployModel,
   cleanupProject,
   loadTrainingState,
+  sendSlackNotification,
 } from "../helpers/pipeline-helpers";
 import { LoginPage } from "../../../src/pages/LoginPage";
 
@@ -27,15 +28,19 @@ import { LoginPage } from "../../../src/pages/LoginPage";
  *
  * Real backend, no mocks.
  */
+const TEST_TITLE = "wait for training completion and deploy";
+
 test.describe("Training Completion — Phase 2 @critical-path @training-phase2", () => {
   test.setTimeout(7 * 60 * 60 * 1000); // 7 hours for long training
+
+  let projectName: string = "";
 
   test.skip(
     !envConfig.credentials.admin.username,
     "Admin credentials not configured"
   );
 
-  test("wait for training completion and deploy", async ({
+  test(TEST_TITLE, async ({
     page,
     loginPage,
     deployPage,
@@ -48,36 +53,51 @@ test.describe("Training Completion — Phase 2 @critical-path @training-phase2",
       return;
     }
 
-    if (state.phase === "done") {
-      // Already completed — just deploy
-      console.log(`Training already done for project ${state.projectId}`);
-    } else if (state.phase === "failed") {
-      throw new Error(
-        `Training previously failed for project ${state.projectId}. ` +
-          `Delete test-results/training-state.json and re-run Phase 1.`
-      );
-    } else {
-      // Phase 1 started training — authenticate and poll for completion
-      await signIn(page, loginPage);
+    projectName = `Phase2-${state.projectId}`;
+    await sendSlackNotification(TEST_TITLE, projectName, "started");
 
-      const updatedState = await waitForTrainingCompletion(
-        page,
-        state,
-        consoleErrors
-      );
+    try {
+      if (state.phase === "done") {
+        // Already completed — just deploy
+        console.log(`Training already done for project ${state.projectId}`);
+      } else if (state.phase === "failed") {
+        throw new Error(
+          `Training previously failed for project ${state.projectId}. ` +
+            `Delete test-results/training-state.json and re-run Phase 1.`
+        );
+      } else {
+        // Phase 1 started training — authenticate and poll for completion
+        await signIn(page, loginPage);
 
-      expect(updatedState.phase).toBe("done");
+        const updatedState = await waitForTrainingCompletion(
+          page,
+          state,
+          consoleErrors
+        );
+
+        expect(updatedState.phase).toBe("done");
+      }
+
+      // Deploy the trained model
+      // Re-authenticate since training wait may have taken hours
+      const freshLoginPage = new LoginPage(page);
+      await freshLoginPage.loginAs("admin");
+      await page.waitForLoadState("networkidle");
+
+      await deployModel(page, deployPage, state.projectId, consoleErrors);
+
+      await sendSlackNotification(TEST_TITLE, projectName, "passed");
+
+      // Cleanup
+      await cleanupProject(page, state.projectId);
+    } catch (error: any) {
+      await sendSlackNotification(
+        TEST_TITLE,
+        projectName,
+        "failed",
+        error?.message || "Unknown error"
+      );
+      throw error;
     }
-
-    // Deploy the trained model
-    // Re-authenticate since training wait may have taken hours
-    const freshLoginPage = new LoginPage(page);
-    await freshLoginPage.loginAs("admin");
-    await page.waitForLoadState("networkidle");
-
-    await deployModel(page, deployPage, state.projectId, consoleErrors);
-
-    // Cleanup
-    await cleanupProject(page, state.projectId);
   });
 });

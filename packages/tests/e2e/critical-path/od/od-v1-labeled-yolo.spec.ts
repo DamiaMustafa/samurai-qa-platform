@@ -14,6 +14,7 @@ import {
   deployModel,
   cleanupProject,
   fixturePath,
+  sendSlackNotification,
 } from "../helpers/pipeline-helpers";
 import { assertCheckpoint } from "../helpers/critical-path.helpers";
 
@@ -36,10 +37,13 @@ import { assertCheckpoint } from "../helpers/critical-path.helpers";
  *
  * Real backend, no mocks.
  */
+const TEST_TITLE = "full pipeline: OD V1 + YOLO labeled → train → deploy";
+
 test.describe("Critical Path — OD V1 Labeled YOLO @critical-path @od", () => {
   test.setTimeout(8 * 60 * 60 * 1000); // 8 hours — training can take 4-6h
 
   let projectId: string | undefined;
+  let projectName: string = "";
 
   test.skip(
     !envConfig.credentials.admin.username,
@@ -49,6 +53,8 @@ test.describe("Critical Path — OD V1 Labeled YOLO @critical-path @od", () => {
   test.beforeEach(async ({ loginPage, page }) => {
     await signIn(page, loginPage);
     projectId = undefined;
+    projectName = `E2E-OD-V1-YOLO-Labeled-${new Date().toISOString().substring(0, 10)}-${String(new Date().getHours()).padStart(2, "0")}-${String(new Date().getMinutes()).padStart(2, "0")}`;
+    await sendSlackNotification(TEST_TITLE, projectName, "started");
   });
 
   test.afterEach(async ({ page }) => {
@@ -57,7 +63,7 @@ test.describe("Critical Path — OD V1 Labeled YOLO @critical-path @od", () => {
     }
   });
 
-  test("full pipeline: OD V1 + YOLO labeled → train → deploy", async ({
+  test(TEST_TITLE, async ({
     page,
     projectCreationPage,
     uploadDatasetPage,
@@ -71,7 +77,7 @@ test.describe("Critical Path — OD V1 Labeled YOLO @critical-path @od", () => {
     projectId = await createProject(page, projectCreationPage, {
       projectType: "object_detection",
       version: "v1",
-      namePrefix: "CP-OD-V1-YOLO",
+      namePrefix: "E2E-OD-V1-YOLO-Labeled",
     }, consoleErrors);
 
     // Step 3: Upload labeled YOLO ZIP
@@ -96,7 +102,9 @@ test.describe("Critical Path — OD V1 Labeled YOLO @critical-path @od", () => {
     await runReview(page, projectId, consoleErrors);
 
     // Step 8a: Start training (Phase 1 — start + verify IN-PROGRESS)
-    const trainingState = await startTraining(page, fastTrainingFormPage, projectId, consoleErrors);
+    const trainingState = await startTraining(page, fastTrainingFormPage, projectId, consoleErrors, {
+      trainingNamePrefix: "E2E-FastTrain-OD-V1-YOLO",
+    });
 
     // Step 8b: Wait for training completion (Phase 2 — poll for DONE)
     // If training already completed (small dataset), this is a no-op.
