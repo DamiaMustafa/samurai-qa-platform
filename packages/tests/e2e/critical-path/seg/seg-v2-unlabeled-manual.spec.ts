@@ -26,6 +26,9 @@ import {
  *   Review → Fast Train Phase 1 (start + verify IN-PROGRESS) →
  *   Fast Train Phase 2 (poll for DONE, up to 6 hours) →
  *   Deploy → Cleanup
+ *
+ * Uses seg_unlabeled folder as unlabeled seg data.
+ * Class: road
  */
 const TEST_TITLE = "full pipeline: SEG V2 + unlabeled manual → train → deploy";
 
@@ -72,7 +75,7 @@ test.describe("Critical Path — SEG V2 Unlabeled Manual @critical-path @seg", (
     }, consoleErrors);
 
     await uploadUnlabeledFolder(page, uploadDatasetPage, {
-      folderPath: "road_segmentationv1.1.v4i.coco",
+      folderPath: "seg_unlabeled",
       classNames: ["road"],
     }, consoleErrors);
 

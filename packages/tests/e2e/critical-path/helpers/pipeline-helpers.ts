@@ -300,7 +300,7 @@ export async function uploadVideo(
   await uploadDatasetPage.uploadVideoFile(videoBuffer, fileName);
 
   // Wait for validation and submit
-  await uploadDatasetPage.waitForValidationComplete(180_000);
+  await uploadDatasetPage.waitForValidationComplete(600_000); // 10 min — video processing can be slow
   await uploadDatasetPage.clickUploadDataset();
 
   // Wait for the server-side upload to complete
@@ -351,34 +351,39 @@ export async function addClassNames(
   // within the labels table and fill them.
   await page.waitForTimeout(1_000);
 
-  // Try to find and fill class name inputs
+  // Fill class name inputs — use pressSequentially + Tab to trigger Angular validation
   const labelInputs = page.locator(
     "#dataset-flow-labels-page input[type='text'], #dataset-flow-labels-page input:not([type])"
   );
 
   for (let i = 0; i < classNames.length; i++) {
+    // Add more rows if needed
     const inputCount = await labelInputs.count();
-    if (i < inputCount) {
-      await labelInputs.nth(i).fill(classNames[i]);
-    } else {
-      // Click "Add another" to get more input rows
-      const addMore = page
-        .locator("#dataset-flow-labels-add-another")
-        .first();
+    if (i >= inputCount) {
+      const addMore = page.locator("#dataset-flow-labels-add-another").first();
       if (await addMore.isVisible().catch(() => false)) {
         await addMore.click();
         await page.waitForTimeout(500);
       }
-      const updatedCount = await labelInputs.count();
-      if (i < updatedCount) {
-        await labelInputs.nth(i).fill(classNames[i]);
-      }
     }
+
+    const input = labelInputs.nth(i);
+    await input.click();
+    await input.clear();
+    // pressSequentially fires keydown/keypress/input/keyup per character — Angular sees each event
+    await input.pressSequentially(classNames[i], { delay: 50 });
+    await input.press("Tab"); // triggers blur + change → Angular marks field as valid
+    await page.waitForTimeout(200);
   }
 
-  // Click "Next Step" to proceed
+  // Click "Next Step" to proceed — wait until enabled (Angular validates class names first)
   const nextBtn = page.locator("#dataset-flow-labels-next").first();
   await nextBtn.waitFor({ state: "visible", timeout: 10_000 });
+  const enabledDeadline = Date.now() + 15_000;
+  while (Date.now() < enabledDeadline) {
+    if (await nextBtn.isEnabled().catch(() => false)) break;
+    await page.waitForTimeout(500);
+  }
   await nextBtn.click();
 
   await page.waitForLoadState("networkidle");

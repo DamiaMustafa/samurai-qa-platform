@@ -9,6 +9,9 @@ test-screenshots/
 playwright-report/
 blob-report/
 screenshots/
+packages/tests/dashboard/.test-results.json
+packages/tests/allure-results/
+packages/tests/allure-report/
 
 # Next.js
 .next/
@@ -44,6 +47,7 @@ packages/tests/fixtures/datasets/*.zip
 packages/tests/fixtures/datasets/*.mp4
 packages/tests/fixtures/datasets/cls_unlabeled/
 packages/tests/fixtures/datasets/od_unlabeled/
+packages/tests/fixtures/datasets/seg_unlabeled/
 packages/tests/fixtures/datasets/road_segmentationv1.1.v4i.coco/
 
 # IDE

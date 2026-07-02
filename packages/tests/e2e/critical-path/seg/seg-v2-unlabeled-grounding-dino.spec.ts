@@ -73,7 +73,7 @@ test.describe("Critical Path — SEG V2 Unlabeled Grounding DINO @critical-path 
     }, consoleErrors);
 
     await uploadUnlabeledFolder(page, uploadDatasetPage, {
-      folderPath: "road_segmentationv1.1.v4i.coco",
+      folderPath: "seg_unlabeled",
       classNames: ["road"],
     }, consoleErrors);
 
